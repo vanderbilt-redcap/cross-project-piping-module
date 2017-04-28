@@ -1,0 +1,43 @@
+{
+	"name": "Cross-Project Piping",
+
+	"description": "Cross-Project Piping pipes from one project into another. Enable this module in the DESTINATION project and place appropriate field annotations in the DESTINATION field.",
+
+    "authors": [
+        {
+            "name": "Scott J. Pearson",
+            "email": "scott.j.pearson@vanderbilt.edu"
+        }
+    ],
+	
+	"permissions": [
+		"hook_data_entry_form_top",
+		"hook_survey_page_top",
+		"select_data"
+	],
+
+	"links": {
+	},
+
+	"global-settings": [
+                {
+			"key": "term",
+			"name": "Action Tag Term on to/destination field (default: @PROJECTPIPING); '=' (no spaces, no quotes) value is logic with [pid][field_name] or [pid][event_name][field_name] (e.g., @PROJECTPIPING=[123][event][field] (longitudinal) or @PROJECTPIPING=[123][field] (classical)",
+			"allow-project-overrides": true,
+			"required": true,
+			"repeatable": false,
+			"type": "text"
+                },
+                {
+			"key": "match-term",
+			"name": "Action Tag Term on to/destination field (default: @FIELDMATCH); '=' (no spaces, no quotes) value is field name in the destination project (to) that contains the record ID of this record in the source (from). E.g., @FIELDMATCH=screening_id where screening_id is the field on the current destination project that EXACTLY EQUALS the record_id (the primary key) on the source project.",
+			"allow-project-overrides": true,
+			"required": true,
+			"repeatable": false,
+			"type": "text"
+                }
+	],
+	
+	"project-settings": [
+	]
+}
