@@ -8,14 +8,14 @@ require_once dirname(__FILE__) . '/init_hook_functions.php';
 class CrossprojectpipingExternalModule extends AbstractExternalModule
 {
 	function hook_data_entry_form_top($project_id, $record) {
-		$this->process($project_id, $record);
+		$this->processRecord($project_id, $record);
 	}
 
 	function hook_survey_page_top($project_id, $record) {
-		$this->process($project_id, $record);
+		$this->processRecord($project_id, $record);
 	}
 
-	function process($project_id, $record) {
+	function processRecord($project_id, $record) {
 		$term = '@PROJECTPIPING';
 		$matchTerm = '@FIELDMATCH';
 
@@ -138,7 +138,11 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 						var match = <?= json_encode($match) ?>;
                         var url = "<?= $url ?>"+"&pid="+<?= $_GET['pid'] ?>;
-						$.post(url, { thisrecord: <?= $record ?>, thispid: <?= $_GET['pid'] ?>, thismatch: match[field]['params'], otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) { 
+                        var getLabel = 0;
+                        if ($('[name="'+field+'"]').attr("type") == "text") {
+                            getLabel = 1;
+                        }
+						$.post(url, { thisrecord: <?= $record ?>, thispid: <?= $_GET['pid'] ?>, thismatch: match[field]['params'], getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) { 
 							var lastNode = nodes[1];
 							if (nodes.length > 2) {
 								lastNode = nodes[2];
@@ -146,21 +150,29 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 							var tr = $('tr[sq_id='+field+']');
 							var id = lastNode.match(/\([^\s]+\)/);
+                            console.log("Setting "+field+" to "+data);
 							if (id) {    // checkbox
 								id = id[0].replace(/^\(/, "");
 								id = id.replace(/\)$/, "");
 								var input = $('input:checkbox[code="'+id+'"]', tr);
 								if ($(input).length > 0) {
 									if (data == 1) {
+                                        console.log("A Setting "+field+" to "+data);
 										$(input).prop('checked', true);
 									} else {    // data == 0
+                                        console.log("B Setting "+field+" to "+data);
 										$(input).prop('checked', false);
 									}
 								} else {
+                                    console.log("C Setting "+field+" to "+data);
 									$('[name="'+field+'"]').val(data);
 								}
 							} else {
 								$('[name="'+field+'"]').val(data);
+                                console.log("D Setting "+field+" to "+$('[name="'+field+'"]').val());
+                                if ($('[name="'+field+'___radio"][value="'+data+'"]').length > 0) {
+                                    $('[name="'+field+'___radio"][value="'+data+'"]').prop('checked', true);
+                                }
 							}
 						});
 					}

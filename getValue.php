@@ -67,7 +67,11 @@
                         $choices = json_decode($_POST['choices'], true);
                         if (isset($choices[$field])) {
                             if (isset($choices[$field][$result])) {
-                                echo $choices[$field][$result];
+                                if ($_POST['getlabel'] != 0) {
+                                    echo $choices[$field][$result];
+                                } else {
+                                    echo $result;
+                                }
                             } else {
                                 echo $result;
                             }
