@@ -1,7 +1,6 @@
 <?php
 namespace ExternalModules;
 
-require_once dirname(__FILE__) . '/../../external_modules/classes/ExternalModules.php';
 require_once dirname(__FILE__) . '/hooks_common.php';
 require_once dirname(__FILE__) . '/init_hook_functions.php';
 
