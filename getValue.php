@@ -1,6 +1,5 @@
 <?php
 	namespace ExternalModules;
-	require_once dirname(__FILE__) . '/../../external_modules/classes/ExternalModules.php';
 	require_once APP_PATH_DOCROOT.'Classes/LogicTester.php';
 
 	\REDCap::allowProjects(array($_POST['otherpid'], $_POST['thispid']));
