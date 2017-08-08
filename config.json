@@ -21,7 +21,7 @@
 	"links": {
 	},
 
-	"global-settings": [
+	"system-settings": [
                 {
 			"key": "term",
 			"name": "Action Tag Term on to/destination field (default: @PROJECTPIPING); '=' (no spaces, no quotes) value is logic with [pid][field_name] or [pid][event_name][field_name] (e.g., @PROJECTPIPING=[123][event][field] (longitudinal) or @PROJECTPIPING=[123][field] (classical)",
