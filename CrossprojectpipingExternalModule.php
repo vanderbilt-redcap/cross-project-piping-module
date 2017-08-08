@@ -1,5 +1,8 @@
 <?php
-namespace ExternalModules;
+namespace Vanderbilt\CrossprojectpipingExternalModule;
+
+use ExternalModules\AbstractExternalModule;
+use ExternalModules\ExternalModules;
 
 require_once dirname(__FILE__) . '/hooks_common.php';
 require_once dirname(__FILE__) . '/init_hook_functions.php';

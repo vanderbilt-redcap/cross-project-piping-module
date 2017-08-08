@@ -1,6 +1,8 @@
 {
 	"name": "Cross-Project Piping",
 
+	"namespace": "Vanderbilt\\CrossprojectpipingExternalModule",
+
 	"description": "Cross-Project Piping pipes from one project into another. Enable this module in the DESTINATION project and place appropriate field annotations in the DESTINATION field.",
 
     "authors": [
