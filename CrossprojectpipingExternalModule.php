@@ -141,10 +141,10 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 						var match = <?= json_encode($match) ?>;
                         var url = "<?= $url ?>"+"&pid="+<?= $_GET['pid'] ?>;
                         var getLabel = 0;
-                        if (($('[name="'+field+'"]').attr("type") == "text") || ($('[name="'+field+'"]').attr("type") == "notes") {
+                        if (($('[name="'+field+'"]').attr("type") == "text") || ($('[name="'+field+'"]').attr("type") == "notes")) {
                             getLabel = 1;
                         }
-						$.post(url, { thisrecord: <?= $record ?>, thispid: <?= $_GET['pid'] ?>, thismatch: match[field]['params'], getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) { 
+						$.post(url, { thisrecord: '<?= $_GET['id'] ?>', thispid: <?= $_GET['pid'] ?>, thismatch: match[field]['params'], getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) { 
 							var lastNode = nodes[1];
 							if (nodes.length > 2) {
 								lastNode = nodes[2];
