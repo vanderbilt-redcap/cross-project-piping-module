@@ -20,7 +20,17 @@
 		}
 	}
 
-	$data = \REDCap::getData($_POST['otherpid'], 'array', array($matchRecord));
+	$matchSource = $_POST['matchsource'];
+	if(empty($matchRecord)){
+		// Return without echo-ing any values.
+		return;
+	}
+	else if(empty($matchSource)){
+		$data = \REDCap::getData($_POST['otherpid'], 'array', array($matchRecord));
+	}
+	else{
+		$data = \REDCap::getData($_POST['otherpid'], 'array', null, null, null, null, false, false, false, "([$matchSource] = '$matchRecord')");
+	}
 
 	$logic = $_POST['otherlogic'];
     $nodes = preg_split("/\]\[/", $logic);
@@ -58,36 +68,34 @@
     } else {
         $logicItems = array($fieldName => $logic);
     }
-    
-	if ($matchRecord) {
-        $found = false;
-		foreach ($data as $record => $recData) {
-			$Proj = new \Project($_POST['otherpid']);
-            foreach ($logicItems as $field => $logicItem) {
-		        if (\LogicTester::isValid($logicItem)) {
-        		    $result = \LogicTester::apply($logicItem, $recData, $Proj, true);
-				    if ($result) {
-                        $choices = json_decode($_POST['choices'], true);
-                        if (isset($choices[$field])) {
-                            if (isset($choices[$field][$result])) {
-                                if ($_POST['getlabel'] != 0) {
-                                    echo $choices[$field][$result];
-                                } else {
-                                    echo $result;
-                                }
-                            } else {
-                                echo $result;
-                            }
-                        } else {
-					        echo $result;
-                        }
-                        $found = true;
-					    break;
-				    }
-                }
-                if ($found) {
-                    $break;
-                }
+
+	$found = false;
+	foreach ($data as $record => $recData) {
+		$Proj = new \Project($_POST['otherpid']);
+		foreach ($logicItems as $field => $logicItem) {
+			if (\LogicTester::isValid($logicItem)) {
+				$result = \LogicTester::apply($logicItem, $recData, $Proj, true);
+				if ($result) {
+					$choices = json_decode($_POST['choices'], true);
+					if (isset($choices[$field])) {
+						if (isset($choices[$field][$result])) {
+							if ($_POST['getlabel'] != 0) {
+								echo $choices[$field][$result];
+							} else {
+								echo $result;
+							}
+						} else {
+							echo $result;
+						}
+					} else {
+						echo $result;
+					}
+					$found = true;
+					break;
+				}
+			}
+			if ($found) {
+				$break;
 			}
 		}
 	}
