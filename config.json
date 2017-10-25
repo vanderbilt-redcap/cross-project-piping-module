@@ -3,7 +3,7 @@
 
 	"namespace": "Vanderbilt\\CrossprojectpipingExternalModule",
 
-	"description": "Cross-Project Piping pipes from one project into another. Enable this module in the DESTINATION project and place appropriate field annotations in the DESTINATION field.",
+	"description": "Cross-Project Piping pipes from one field in one project into another field in another project. The projects have to be MATCHED on a third field in both projects. Enable this module in the DESTINATION project and place appropriate field annotations in the DESTINATION field. Action Tags will take the form of @PROJECTPIPING=[123PID][field] or [123PID][event][field]. Also, the action tag in another DESTINATION field to be matched to the SOURCE project is @FIELDMATCH=screening_id, where the field hosting the action tag will match screening_id in the SOURCE.",
 
     "authors": [
         {
