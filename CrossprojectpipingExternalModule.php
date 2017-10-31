@@ -159,6 +159,10 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 								lastNode = nodes[2];
 							}
 
+							var triggerChangeEvent = function(field){
+								field.change(); // Trigger a change event for branching logic and event listeners in other modules.
+							}
+
 							var tr = $('tr[sq_id='+field+']');
 							var id = lastNode.match(/\([^\s]+\)/);
                             console.log("Setting "+field+" to "+data);
@@ -174,15 +178,20 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
                                         console.log("B Setting "+field+" to "+data);
 										$(input).prop('checked', false);
 									}
+
+									triggerChangeEvent($(input));
 								} else {
                                     console.log("C Setting "+field+" to "+data);
 									$('[name="'+field+'"]').val(data);
+									triggerChangeEvent($('[name="'+field+'"]'));
 								}
 							} else {
 								$('[name="'+field+'"]').val(data);
+								triggerChangeEvent($('[name="'+field+'"]'));
                                 console.log("D Setting "+field+" to "+$('[name="'+field+'"]').val());
                                 if ($('[name="'+field+'___radio"][value="'+data+'"]').length > 0) {
                                     $('[name="'+field+'___radio"][value="'+data+'"]').prop('checked', true);
+									triggerChangeEvent($('[name="'+field+'___radio"][value="'+data+'"]'));
                                 }
 							}
 						});
