@@ -9,11 +9,11 @@ require_once dirname(__FILE__) . '/init_hook_functions.php';
 
 class CrossprojectpipingExternalModule extends AbstractExternalModule
 {
-	function hook_data_entry_form_top($project_id, $record) {
+	function redcap_data_entry_form_top($project_id, $record) {
 		$this->processRecord($project_id, $record);
 	}
 
-	function hook_survey_page_top($project_id, $record) {
+	function redcap_survey_page_top($project_id, $record) {
 		$this->processRecord($project_id, $record);
 	}
 
@@ -22,7 +22,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		$matchTerm = '@FIELDMATCH';
 		$matchSourceTerm = '@FIELDMATCHSOURCE';
 
-		$settingTerm = ExternalModules::getProjectSetting("vanderbilt_crossplatformpiping", $project_id, "term");
+		$settingTerm = ExternalModules::getProjectSetting($this->PREFIX, $project_id, "term");
 		if ($settingTerm != "") {
 			if ($settingTerm[0] == "@") {
 				$term = $settingTerm;
@@ -31,7 +31,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			}
 		}
 
-		$settingMatchTerm = ExternalModules::getProjectSetting("vanderbilt_crossplatformpiping", $project_id, "match-term");
+		$settingMatchTerm = ExternalModules::getProjectSetting($this->PREFIX, $project_id, "match-term");
 		
 		hook_log("Starting $term and $matchTerm for project $project_id", "DEBUG");
 		
