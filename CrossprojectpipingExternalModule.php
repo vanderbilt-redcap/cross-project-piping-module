@@ -122,7 +122,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
         $url = ExternalModules::getUrl($prefix, "getValue.php");
 		?>
 		<script type='text/javascript'>
-			window.onload = function() {
+			$(function(){
 				var fields = <?php print json_encode($startup_vars) ?>;
                 var choices = <?= json_encode($choicesForFields) ?>;
 				$.each(fields, function(field,params) {
@@ -148,12 +148,12 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 							matchSourceParam = matchSource[field]['params'];
 						}
 
-                        var url = "<?= $url ?>"+"&pid="+<?= $_GET['pid'] ?>;
+                        var url = "<?= $url ?>"+"&pid="+pid;
                         var getLabel = 0;
                         if (($('[name="'+field+'"]').attr("type") == "text") || ($('[name="'+field+'"]').attr("type") == "notes")) {
                             getLabel = 1;
                         }
-						$.post(url, { thisrecord: '<?= $_GET['id'] ?>', thispid: <?= $_GET['pid'] ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
+						$.post(url, { thisrecord: getParameterByName('id'), thispid: pid, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
 							var lastNode = nodes[1];
 							if (nodes.length > 2) {
 								lastNode = nodes[2];
@@ -197,7 +197,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 						});
 					}
 				});
-			}
+			});
 		</script>
 <?php
 	}
