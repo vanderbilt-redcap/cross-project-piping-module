@@ -50,6 +50,13 @@
 			"type": "text"
 			},
 			{
+			"key": "destination-event",
+			"name": "<b>Event name for the field in Destination Project</b> - ???REDO The field variable name in the destination project that contains the value to use for matching (e.g., \"screening_id\" where screening_id is the field on the current destination project that EXACTLY EQUALS the field specified by the @FIELDMATCHSOURCE action tag.",
+			"required": true,
+			"repeatable": false,
+			"type": "event-list"
+			},
+			{
 			"key": "destination-field",
 			"name": "<b>Destination field name in Destination Project</b> - The field variable name in the destination project that contains the value to use for matching (e.g., \"screening_id\" where screening_id is the field on the current destination project that EXACTLY EQUALS the field specified by the @FIELDMATCHSOURCE action tag.",
 			"required": true,
