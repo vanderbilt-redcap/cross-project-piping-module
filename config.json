@@ -19,27 +19,66 @@
 		"select_data"
 	],
 
-	"system-settings": [
-                {
-			"key": "term",
-			"name": "Action Tag Term on to/destination field (default: @PROJECTPIPING); '=' (no spaces, no quotes) value is logic with [pid][field_name] or [pid][event_name][field_name] (e.g., @PROJECTPIPING=[123][event][field] (longitudinal) or @PROJECTPIPING=[123][field] (classical)",
+	"project-settings": [
+      {
+         "key": "repeating-group",
+         "name": "Settings for a single destination field",
+         "required": true,
+         "type": "sub_settings",
+         "repeatable":true,
+         "sub_settings": [
+			{
+			"key": "term-projectid",
+			"name": "<b>PID from Source Project</b> - The project ID number (PID) of the project from which to pipe the data value",
+			"required": true,
+			"repeatable": false,
+			"type": "text",
+			"validation": "integer"
+			},
+			{
+			"key": "term-eventname",
+			"name": "<b>Event name from Source Project</b> - The unique event name (e.g., enrollment_arm1) in the project from which to pipe the data value (for longitudinal projects only)",
+			"required": false,
+			"repeatable": false,
+			"type": "text"
+			},
+			{
+			"key": "term-field",
+			"name": "<b>Field name from Source Project</b> - The field variable name in the project from which to pipe the data value",
 			"required": true,
 			"repeatable": false,
 			"type": "text"
-                },
-                {
+			},
+			{
+			"key": "destination-field",
+			"name": "<b>Destination field name in Destination Project</b> - The field variable name in the destination project that contains the value to use for matching (e.g., \"screening_id\" where screening_id is the field on the current destination project that EXACTLY EQUALS the field specified by the @FIELDMATCHSOURCE action tag.",
+			"required": true,
+			"repeatable": false,
+			"type": "field-list"
+			},
+			{
 			"key": "match-term",
-			"name": "Action Tag Term on to/destination field (default: @FIELDMATCH); '=' (no spaces, no quotes) value is field name in the destination project (to) that contains the value to use for matching. E.g., @FIELDMATCH=screening_id where screening_id is the field on the current destination project that EXACTLY EQUALS the field specified by the @FIELDMATCHSOURCE action tag.",
+			"name": "<b>Field name to match in Destination Project</b> - The field variable name in the destination project that contains the value to use for matching (e.g., \"screening_id\" where screening_id is the field on the current destination project that EXACTLY EQUALS the field specified by the @FIELDMATCHSOURCE action tag.",
 			"required": true,
 			"repeatable": false,
-			"type": "text"
-                },
-				{
+			"type": "field-list"
+			},
+			{
 			"key": "match-source-term",
 			"name": "Action Tag Term on to/destination field (default: @FIELDMATCHSOURCE); '=' (no spaces, no quotes) value is field name in the source project (from) that contains the value to use for matching.  If this action tag is omitted, the record id field on the source project will be used.  E.g., @FIELDMATCHSOURCE=screening_id where screening_id is the field on the source project that EXACTLY EQUALS the field on the destination project specified by the @FIELDMATCH action tag.",
-			"required": true,
+			"required": false,
 			"repeatable": false,
 			"type": "text"
-				}
+			}
+		]
+	  }
+	],
+	
+	"system-settings": [
+		{
+		"key": "permission-warning",
+		"name": "<div style='color:#C00000;'><b>NOTICE:</b> Since this module allows for data to be pulled into a project from *any* project in the system, it is *highly recommended* that the <b>module configuration permissions</b> above be set to \"<b>require module-specific user privilege</b>\" so that only REDCap administrators are able to set the project-level configuration of this module.</div>",
+		"type": "descriptive"
+		}
 	]
 }

@@ -18,6 +18,21 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 	}
 
 	function processRecord($project_id, $record) {
+		$Proj = new \Project($project_id);
+		// Get project config values
+		$sourcePids = $this->getProjectSetting('term-projectid', $project_id);
+		$sourceEvents = $this->getProjectSetting('term-eventname', $project_id);
+		$sourceFields = $this->getProjectSetting('term-field', $project_id);
+		$destinationFields = $this->getProjectSetting('destination-field', $project_id);
+		$matchTerms = $this->getProjectSetting('match-term', $project_id);
+		$matchTermsSource = $this->getProjectSetting('match-source-term', $project_id);
+		print_array($sourcePids);
+		print_array($sourceEvents);
+		print_array($sourceFields);
+		print_array($destinationFields);
+		print_array($matchTerms);
+		print_array($matchTermsSource);
+		
 		$term = '@PROJECTPIPING';
 		$matchTerm = '@FIELDMATCH';
 		$matchSourceTerm = '@FIELDMATCHSOURCE';
@@ -119,7 +134,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
         }
 
         list($prefix, $version) = ExternalModules::getParseModuleDirectoryPrefixAndVersion($this->getModuleDirectoryName());
-        $url = ExternalModules::getUrl($prefix, "getValue.php");
+        $url = $this->getUrl("getValue.php");
 		?>
 		<script type='text/javascript'>
 			$(function(){
