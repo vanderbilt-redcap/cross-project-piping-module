@@ -17,10 +17,112 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		$this->processRecord($project_id, $record);
 	}
 
+	function pDump($value, $die = false) {
+		highlight_string("<?php\n\$data =\n" . var_export($value, true) . ";\n?>");
+		echo '<hr>';
+		if($die) {
+			die();
+		}
+	}
+
+	/**
+	 * Generates nested array of settings keys. Used for multi-level sub_settings.
+	 */
+	function getKeysFromConfig($config) {
+		foreach($config['sub_settings'] as $subSetting){
+			if(!empty($subSetting['sub_settings'])) {
+				$keys[] = array('key' => $subSetting['key'], 'sub_settings' => $this->getKeysFromConfig($subSetting));
+			} else {
+				$keys[] = array('key' => $subSetting['key'], 'sub_settings' => array());
+			}
+		}
+		return $keys;
+	}
+
+	/**
+	 * Used for processing nested subsettings while generating settings data array.
+	 */
+	function processSubSettings($rawSettings, $key, $inc, $depth = 0) {
+		$returnArr = array();
+		echo "$"."rawSettings['".$key['key']."]['value']";
+		$eachData = $rawSettings[$key['key']]['value'];
+		foreach($inc AS $i) {
+			echo '['.$i.']';
+			$eachData = $eachData[$i];
+		}
+		echo ' ::: DEPTH: '.$depth.'<br>';
+		foreach($eachData AS $k => $v) {
+			foreach($key['sub_settings'] AS $skey => $sval) {
+				if(!empty($sval['sub_settings'])) {
+					$sinc = $inc;
+					$sinc[] = $k;
+					$depth++;
+					$returnArr[$k][$sval['key']] = $this->processSubSettings($rawSettings, $sval, $sinc, $depth);
+					$depth--;
+				} else {
+					$retData = $rawSettings[$sval['key']]['value'];
+					echo "$"."rawSettings['".$sval['key']."]['value']";
+					foreach($inc AS $i) {
+						echo '['.$i.']';
+						$retData = $retData[$i];
+					}
+					$returnArr[$k][$sval['key']] = $retData[$k];
+					echo ' ::: DEPTH: '.$depth.'<br>';
+				}
+				// echo '<strong>'.$depth.' $returnArr['.$k.'][\''.$sval['key'].'\']</strong><br>';
+				// $this->pDump($returnArr[$k][$sval['key']]);
+			}
+		}
+		return $returnArr;
+	} 
+
+	/**
+	 * Get full nested settings/sub_settings data.
+	 */
+	function getPipingSettings($project_id) {
+		$keys = [];
+		$config = $this->getSettingConfig('pipe-projects');
+		$keys = $this->getKeysFromConfig($config);
+		// echo '<h1>Keys Data</h1>';
+		// $this->pDump($keys);
+		$subSettings = [];
+		$rawSettings = ExternalModules::getProjectSettingsAsArray([$this->PREFIX], $project_id);
+		$subSettingCount = count($rawSettings[$keys[0]['key']]['value']);
+
+		for($i=0; $i<$subSettingCount; $i++){
+			$subSetting = [];
+			foreach($keys as $key){
+				if(!empty($key['sub_settings'])) {
+					$subSetting[$key['key']] = $this->processSubSettings($rawSettings, $key, array($i));
+					// echo '<h1>RETURNED SUB PROC DATA</h1>';
+					// $this->pDump($subSetting[$key['key']]);
+				} else {
+					$subSetting[$key['key']] = $rawSettings[$key['key']]['value'][$i];
+				}
+			}
+
+			$subSettings[] = $subSetting;
+		}
+		// echo '<h1>Sub Settings</h1>';
+		// $this->pDump($subSettings);
+		// echo '<h1>Raw Settings: COUNT DATA?</h1>';
+		// $this->pDump($rawSettings[$keys[0]['key']]['value']);
+		// $this->pDump($subSettingCount);
+		// echo '<h1>Raw Settings</h1>';
+		// $this->pDump($rawSettings);
+		return $subSettings;
+	}
+
 	function processRecord($project_id, $record) {
 		$term = '@PROJECTPIPING';
 		$matchTerm = '@FIELDMATCH';
 		$matchSourceTerm = '@FIELDMATCHSOURCE';
+
+		$module_data = ExternalModules::getProjectSettingsAsArray([$this->PREFIX], $project_id);
+		$module_sub_data = $this->getPipingSettings($project_id);
+		echo '<h1>Processed Piping Settings</h1>';
+		$this->pDump($module_sub_data, true);
+		//$this->pDump($module_data, true);
 
 		$settingTerm = ExternalModules::getProjectSetting("vanderbilt_crossplatformpiping", $project_id, "term");
 		if ($settingTerm != "") {
@@ -32,7 +134,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		}
 
 		$settingMatchTerm = ExternalModules::getProjectSetting("vanderbilt_crossplatformpiping", $project_id, "match-term");
-		
+
 		hook_log("Starting $term and $matchTerm for project $project_id", "DEBUG");
 		
 		///////////////////////////////
@@ -61,135 +163,136 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		$startup_vars = $hook_functions[$term];
 		$match = $hook_functions[$matchTerm];
 		$matchSource = $hook_functions[$matchSourceTerm];
+		echo '<h1>FINAL VAR DUMP</h1>';
+		$this->pDump($hook_functions, true);
+		$choicesForFields = array();
+		foreach ($startup_vars as $field => $params) {
+			$nodes = preg_split("/\]\[/", $params['params']);
+			for ($i=0; $i < count($nodes); $i++) {
+				$nodes[$i] = preg_replace("/^\[/", "", $nodes[$i]);
+				$nodes[$i] = preg_replace("/\]$/", "", $nodes[$i]);
+			}
+			$otherpid = $nodes[0];
+			$metadata = \REDCap::getDataDictionary($otherpid, 'array');
+			if (count($nodes) == 2) {
+				$fieldName = $nodes[1];
+			} else {
+				$fieldName = $nodes[2];
+			}
+			if (preg_match("/\*/", $fieldName)) {
+				$fieldRegEx = "/^".preg_replace("/\*/", ".*", $fieldName)."$/";
+				$fieldNames = array();
+				foreach ($metadata as $field => $values) {
+					if (preg_match($fieldRegEx, $field)) {
+						$fieldNames[] = $field;
+					}
+				}
+			} else {
+				$fieldNames = array($fieldName);
+			}
+			foreach ($fieldNames as $fieldName) {
+				if ($metadata[$fieldName] && $metadata[$fieldName]["select_choices_or_calculations"]) {
+					$choices = preg_split("/\|\s*/", $metadata[$fieldName]["select_choices_or_calculations"]);
+					$newChoices = array();
+					for ($i=0; $i < count($choices); $i++) {
+						$choices[$i] = preg_split("/,\s*/", $choices[$i]);
+						if (count($choices[$i]) > 2) {
+							$j = 0;
+							$newChoice = array();
+							$newValue = array();
+							foreach ($choices as $choice) {
+								if ($j === 0) {
+									$newChoice[] = $choice;
+								} else {
+									$newValue[] = $choice;
+								}
+							}
+							$newChoice[] = implode(",", $newValue);
+							$choice[$i] = $newChoice;
+						}
+						$choices[$i][0] = trim($choices[$i][0]);
+						$choices[$i][1] = trim($choices[$i][1]);
+					}
+					$choicesForFields[$fieldName] = array();
+					foreach ($choices as $choice) {
+						$choicesForFields[$fieldName][$choice[0]] = $choice[1];
+					}
+				}
+			}
+		}
 
-        $choicesForFields = array();
-        foreach ($startup_vars as $field => $params) {
-            $nodes = preg_split("/\]\[/", $params['params']);
-            for ($i=0; $i < count($nodes); $i++) {
-                $nodes[$i] = preg_replace("/^\[/", "", $nodes[$i]);
-                $nodes[$i] = preg_replace("/\]$/", "", $nodes[$i]);
-            }
-            $otherpid = $nodes[0];
-            $metadata = \REDCap::getDataDictionary($otherpid, 'array');
-            if (count($nodes) == 2) {
-               $fieldName = $nodes[1];
-            } else {
-               $fieldName = $nodes[2];
-            }
-            if (preg_match("/\*/", $fieldName)) {
-                $fieldRegEx = "/^".preg_replace("/\*/", ".*", $fieldName)."$/";
-                $fieldNames = array();
-                foreach ($metadata as $field => $values) {
-                    if (preg_match($fieldRegEx, $field)) {
-                        $fieldNames[] = $field;
-                    }
-                }
-            } else {
-                $fieldNames = array($fieldName);
-            }
-            foreach ($fieldNames as $fieldName) {
-                if ($metadata[$fieldName] && $metadata[$fieldName]["select_choices_or_calculations"]) {
-                    $choices = preg_split("/\|\s*/", $metadata[$fieldName]["select_choices_or_calculations"]);
-                    $newChoices = array();
-                    for ($i=0; $i < count($choices); $i++) {
-                        $choices[$i] = preg_split("/,\s*/", $choices[$i]);
-                        if (count($choices[$i]) > 2) {
-                            $j = 0;
-                            $newChoice = array();
-                            $newValue = array();
-                            foreach ($choices as $choice) {
-                                if ($j === 0) {
-                                    $newChoice[] = $choice;
-                                } else {
-                                    $newValue[] = $choice;
-                                }
-                            }
-                            $newChoice[] = implode(",", $newValue);
-                            $choice[$i] = $newChoice;
-                        }
-                        $choices[$i][0] = trim($choices[$i][0]);
-                        $choices[$i][1] = trim($choices[$i][1]);
-                    }
-                    $choicesForFields[$fieldName] = array();
-                    foreach ($choices as $choice) {
-                        $choicesForFields[$fieldName][$choice[0]] = $choice[1];
-                    }
-                }
-            }
-        }
-
-        list($prefix, $version) = ExternalModules::getParseModuleDirectoryPrefixAndVersion($this->getModuleDirectoryName());
-        $url = ExternalModules::getUrl($prefix, "getValue.php");
+		list($prefix, $version) = ExternalModules::getParseModuleDirectoryPrefixAndVersion($this->getModuleDirectoryName());
+		$url = ExternalModules::getUrl($prefix, "getValue.php");
 		?>
-		<script type='text/javascript'>
-			window.onload = function() {
-				var fields = <?php print json_encode($startup_vars) ?>;
-                var choices = <?= json_encode($choicesForFields) ?>;
-				$.each(fields, function(field,params) {
-					var value = params.params;
-					var nodes = value.split(/\]\[/);
-					for (var i=0; i < nodes.length; i++) {
-						nodes[i] = nodes[i].replace(/^\[/, "");
-						nodes[i] = nodes[i].replace(/\]$/, "");
-					}
-					if ((nodes[0].match(/^\d+$/)) && (nodes.length >= 2)) {
-						var remaining;
-						if (nodes.length == 2) {
-							remaining = "[" + nodes[1] + "]";
-                    } else {
-							remaining = "[" + nodes[1] + "][" + nodes[2] + "]";
-					}
-
-						var match = <?= json_encode($match) ?>;
-						var matchSource = <?= json_encode($matchSource) ?>;
-
-						var matchSourceParam = null
-						if(matchSource && matchSource[field]){
-							matchSourceParam = matchSource[field]['params'];
+			<script type='text/javascript'>
+				window.onload = function() {
+					var fields = <?php print json_encode($startup_vars) ?>;
+					var choices = <?= json_encode($choicesForFields) ?>;
+					$.each(fields, function(field,params) {
+						var value = params.params;
+						var nodes = value.split(/\]\[/);
+						for (var i=0; i < nodes.length; i++) {
+							nodes[i] = nodes[i].replace(/^\[/, "");
+							nodes[i] = nodes[i].replace(/\]$/, "");
+						}
+						if ((nodes[0].match(/^\d+$/)) && (nodes.length >= 2)) {
+							var remaining;
+							if (nodes.length == 2) {
+								remaining = "[" + nodes[1] + "]";
+						} else {
+								remaining = "[" + nodes[1] + "][" + nodes[2] + "]";
 						}
 
-                        var url = "<?= $url ?>"+"&pid="+<?= $_GET['pid'] ?>;
-                        var getLabel = 0;
-                        if (($('[name="'+field+'"]').attr("type") == "text") || ($('[name="'+field+'"]').attr("type") == "notes")) {
-                            getLabel = 1;
-                        }
-						$.post(url, { thisrecord: '<?= $_GET['id'] ?>', thispid: <?= $_GET['pid'] ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
-							var lastNode = nodes[1];
-							if (nodes.length > 2) {
-								lastNode = nodes[2];
+							var match = <?= json_encode($match) ?>;
+							var matchSource = <?= json_encode($matchSource) ?>;
+
+							var matchSourceParam = null
+							if(matchSource && matchSource[field]){
+								matchSourceParam = matchSource[field]['params'];
 							}
 
-							var tr = $('tr[sq_id='+field+']');
-							var id = lastNode.match(/\([^\s]+\)/);
-                            console.log("Setting "+field+" to "+data);
-							if (id) {    // checkbox
-								id = id[0].replace(/^\(/, "");
-								id = id.replace(/\)$/, "");
-								var input = $('input:checkbox[code="'+id+'"]', tr);
-								if ($(input).length > 0) {
-									if (data == 1) {
-                                        console.log("A Setting "+field+" to "+data);
-										$(input).prop('checked', true);
-									} else {    // data == 0
-                                        console.log("B Setting "+field+" to "+data);
-										$(input).prop('checked', false);
+							var url = "<?= $url ?>"+"&pid="+<?= $_GET['pid'] ?>;
+							var getLabel = 0;
+							if (($('[name="'+field+'"]').attr("type") == "text") || ($('[name="'+field+'"]').attr("type") == "notes")) {
+								getLabel = 1;
+							}
+							$.post(url, { thisrecord: '<?= $_GET['id'] ?>', thispid: <?= $_GET['pid'] ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
+								var lastNode = nodes[1];
+								if (nodes.length > 2) {
+									lastNode = nodes[2];
+								}
+
+								var tr = $('tr[sq_id='+field+']');
+								var id = lastNode.match(/\([^\s]+\)/);
+								console.log("Setting "+field+" to "+data);
+								if (id) {    // checkbox
+									id = id[0].replace(/^\(/, "");
+									id = id.replace(/\)$/, "");
+									var input = $('input:checkbox[code="'+id+'"]', tr);
+									if ($(input).length > 0) {
+										if (data == 1) {
+											console.log("A Setting "+field+" to "+data);
+											$(input).prop('checked', true);
+										} else {    // data == 0
+											console.log("B Setting "+field+" to "+data);
+											$(input).prop('checked', false);
+										}
+									} else {
+										console.log("C Setting "+field+" to "+data);
+										$('[name="'+field+'"]').val(data);
 									}
 								} else {
-                                    console.log("C Setting "+field+" to "+data);
 									$('[name="'+field+'"]').val(data);
+									console.log("D Setting "+field+" to "+$('[name="'+field+'"]').val());
+									if ($('[name="'+field+'___radio"][value="'+data+'"]').length > 0) {
+										$('[name="'+field+'___radio"][value="'+data+'"]').prop('checked', true);
+									}
 								}
-							} else {
-								$('[name="'+field+'"]').val(data);
-                                console.log("D Setting "+field+" to "+$('[name="'+field+'"]').val());
-                                if ($('[name="'+field+'___radio"][value="'+data+'"]').length > 0) {
-                                    $('[name="'+field+'___radio"][value="'+data+'"]').prop('checked', true);
-                                }
-							}
-						});
-					}
-				});
-			}
-		</script>
-<?php
+							});
+						}
+					});
+				}
+			</script>
+		<?php
 	}
 }

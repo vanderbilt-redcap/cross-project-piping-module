@@ -50,5 +50,74 @@
 	],
 	
 	"project-settings": [
+		{
+			"key": "pipe-projects",
+			"name": "Pipe Project",
+			"required": false,
+			"type": "sub_settings",
+			"repeatable": true,
+			"sub_settings": [
+				{
+					"key": "project-id",
+					"name": "Source Project",
+					"required": false,
+					"type": "project-id",
+					"repeatable": false
+				},
+				{
+					"key": "field-match",
+					"name": "Unique Match Field: Unique field used to match records across projects (usually the record_id)",
+					"required": false,
+					"type": "field-list",
+					"repeatable": false
+				},
+				{
+					"key": "field-match-source",
+					"name": "Alternate Source Match Field: This is only used if the Unique Match Field in the destination project has a different variable name from the Unique Match Field in the source project",
+					"required": false,
+					"type": "text",
+					"repeatable": false
+				},
+				{
+					"key": "project-fields",
+					"name": "Pipe Field",
+					"required": false,
+					"type": "sub_settings",
+					"repeatable": true,
+					"sub_settings": [
+						{
+							"key": "data-destination-field",
+							"name": "Destination Field",
+							"required": false,
+							"type": "field-list",
+							"repeatable": false
+						},
+						{
+							"key": "data-source-field",
+							"name": "Source Field: This field is only needed if the Destination Field has a different variable name from the Source Field on the source project",
+							"required": false,
+							"type": "text",
+							"repeatable": false
+						},
+						{
+							"key": "another-field",
+							"name": "Another Field",
+							"required": false,
+							"type": "sub_settings",
+							"repeatable": true,
+							"sub_settings": [
+								{
+									"key": "yet-another-level",
+									"name": "Yet Another Field",
+									"required": false,
+									"type": "text",
+									"repeatable": false
+								}
+							]
+						}
+					]
+				}
+			]
+		}
 	]
 }
