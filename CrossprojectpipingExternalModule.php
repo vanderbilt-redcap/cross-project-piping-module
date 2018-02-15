@@ -40,17 +40,14 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 	}
 
 	/**
-	 * Used for processing nested subsettings while generating settings data array.
+	 * Used for processing nested sub_settings while generating settings data array.
 	 */
 	function processSubSettings($rawSettings, $key, $inc, $depth = 0) {
 		$returnArr = array();
-		echo "$"."rawSettings['".$key['key']."]['value']";
 		$eachData = $rawSettings[$key['key']]['value'];
 		foreach($inc AS $i) {
-			echo '['.$i.']';
 			$eachData = $eachData[$i];
 		}
-		echo ' ::: DEPTH: '.$depth.'<br>';
 		foreach($eachData AS $k => $v) {
 			foreach($key['sub_settings'] AS $skey => $sval) {
 				if(!empty($sval['sub_settings'])) {
@@ -61,16 +58,11 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 					$depth--;
 				} else {
 					$retData = $rawSettings[$sval['key']]['value'];
-					echo "$"."rawSettings['".$sval['key']."]['value']";
 					foreach($inc AS $i) {
-						echo '['.$i.']';
 						$retData = $retData[$i];
 					}
 					$returnArr[$k][$sval['key']] = $retData[$k];
-					echo ' ::: DEPTH: '.$depth.'<br>';
 				}
-				// echo '<strong>'.$depth.' $returnArr['.$k.'][\''.$sval['key'].'\']</strong><br>';
-				// $this->pDump($returnArr[$k][$sval['key']]);
 			}
 		}
 		return $returnArr;
@@ -83,8 +75,6 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		$keys = [];
 		$config = $this->getSettingConfig('pipe-projects');
 		$keys = $this->getKeysFromConfig($config);
-		// echo '<h1>Keys Data</h1>';
-		// $this->pDump($keys);
 		$subSettings = [];
 		$rawSettings = ExternalModules::getProjectSettingsAsArray([$this->PREFIX], $project_id);
 		$subSettingCount = count($rawSettings[$keys[0]['key']]['value']);
@@ -94,22 +84,12 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			foreach($keys as $key){
 				if(!empty($key['sub_settings'])) {
 					$subSetting[$key['key']] = $this->processSubSettings($rawSettings, $key, array($i));
-					// echo '<h1>RETURNED SUB PROC DATA</h1>';
-					// $this->pDump($subSetting[$key['key']]);
 				} else {
 					$subSetting[$key['key']] = $rawSettings[$key['key']]['value'][$i];
 				}
 			}
-
 			$subSettings[] = $subSetting;
 		}
-		// echo '<h1>Sub Settings</h1>';
-		// $this->pDump($subSettings);
-		// echo '<h1>Raw Settings: COUNT DATA?</h1>';
-		// $this->pDump($rawSettings[$keys[0]['key']]['value']);
-		// $this->pDump($subSettingCount);
-		// echo '<h1>Raw Settings</h1>';
-		// $this->pDump($rawSettings);
 		return $subSettings;
 	}
 
@@ -118,11 +98,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		$matchTerm = '@FIELDMATCH';
 		$matchSourceTerm = '@FIELDMATCHSOURCE';
 
-		$module_data = ExternalModules::getProjectSettingsAsArray([$this->PREFIX], $project_id);
-		$module_sub_data = $this->getPipingSettings($project_id);
-		echo '<h1>Processed Piping Settings</h1>';
-		$this->pDump($module_sub_data, true);
-		//$this->pDump($module_data, true);
+		$module_data = $this->getPipingSettings($project_id);
 
 		$settingTerm = ExternalModules::getProjectSetting("vanderbilt_crossplatformpiping", $project_id, "term");
 		if ($settingTerm != "") {
@@ -159,12 +135,26 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			return;
 		}
 		//////////////////////////////
+
+		if(!empty($module_data)) {
+			$hook_functions = array();
+			foreach($module_data AS $mdk => $mdv) {
+				$projId = $mdv['project-id'];
+				$fieldMatch = $mdv['field-match'];
+				$fieldMatchSource = $mdv['field-match-source'];
+				foreach($mdv['project-fields'] AS $pfk => $pfv) {
+					$hook_functions[$term][$pfv['data-destination-field']] = array('params' => '['.$projId.']['.(empty($pfv['data-source-field']) ? $pfv['data-destination-field'] : $pfv['data-source-field']).']');
+					$hook_functions[$matchTerm][$pfv['data-destination-field']] = array('params' => $fieldMatch);
+					if(!empty($fieldMatchSource)) {
+						$hook_functions[$matchSourceTerm][$pfv['data-destination-field']] = $fieldMatchSource;
+					}
+				}
+			}
+		}
 		
 		$startup_vars = $hook_functions[$term];
 		$match = $hook_functions[$matchTerm];
 		$matchSource = $hook_functions[$matchSourceTerm];
-		echo '<h1>FINAL VAR DUMP</h1>';
-		$this->pDump($hook_functions, true);
 		$choicesForFields = array();
 		foreach ($startup_vars as $field => $params) {
 			$nodes = preg_split("/\]\[/", $params['params']);
