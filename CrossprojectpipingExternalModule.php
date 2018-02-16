@@ -272,7 +272,45 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 										$('[name="'+field+'"]').val(data);
 									}
 								} else {
-									$('[name="'+field+'"]').val(data);
+									// Is this a date picker field? If so we need to format this date correctly.
+									if($('[name="'+field+'"]').hasClass('hasDatepicker')) {
+										var dateFormatStr = $('[name="'+field+'"]').attr('fv');
+										var dateFormatParams = dateFormatStr.split('_');
+										var dFFKey = 1;
+										var dFFormatParams = dateFormatParams.slice(-1)[0].split('');
+										var dFFormatArr = [];
+										for (var i = 0, len = dFFormatParams.length; i < len; i++) {
+											dFFormatArr.push(dFFormatParams[i]+dFFormatParams[i]);
+										}
+										dFFormat = dFFormatArr.join('-');
+
+										var newDate = $.datepicker.formatDate(dFFormat, new Date(data.replace(/\-/g,' ')));
+										
+										var dateTimeStr = '';
+										var dateTimeData = [];
+										if(dateFormatParams[0] == 'datetime') {
+											dataParams = data.split(' ');
+											data = dataParams[0];
+											
+											if(dataParams.length <= 1 || dataParams[1].length < 3) {
+												dateTimeData = ['00', '00', '00'];
+											} else {
+												dateTimeData = dataParams[1].split(':');
+											}
+											var dateTimeVal = dateTimeData[0]+':'+dateTimeData[1];
+											if(dateFormatParams.length > 2) {
+												var dateTimeVal = dateTimeVal+':'+dateTimeData[2];
+											}
+											if(dateTimeVal.length) {
+												dateTimeStr = ' '+dateTimeVal;
+											}
+											
+										}
+
+										$('[name="'+field+'"]').val(newDate + dateTimeStr);
+									} else {
+										$('[name="'+field+'"]').val(data);
+									}
 									console.log("D Setting "+field+" to "+$('[name="'+field+'"]').val());
 									if ($('[name="'+field+'___radio"][value="'+data+'"]').length > 0) {
 										$('[name="'+field+'___radio"][value="'+data+'"]').prop('checked', true);
