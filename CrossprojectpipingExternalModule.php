@@ -131,6 +131,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		
 		//////////////////////////////
 
+		// If we have module settings lets overwrite $hook_functions with our module settings data
 		if(!empty($module_data)) {
 			$hook_functions = array();
 			foreach($module_data AS $mdk => $mdv) {
@@ -216,110 +217,119 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		$url = ExternalModules::getUrl($prefix, "getValue.php");
 		?>
 			<script type='text/javascript'>
+				
 				window.onload = function() {
-					var fields = <?php print json_encode($startup_vars) ?>;
-					var choices = <?= json_encode($choicesForFields) ?>;
-					$.each(fields, function(field,params) {
-						var value = params.params;
-						var nodes = value.split(/\]\[/);
-						for (var i=0; i < nodes.length; i++) {
-							nodes[i] = nodes[i].replace(/^\[/, "");
-							nodes[i] = nodes[i].replace(/\]$/, "");
-						}
-						if ((nodes[0].match(/^\d+$/)) && (nodes.length >= 2)) {
-							var remaining;
-							if (nodes.length == 2) {
-								remaining = "[" + nodes[1] + "]";
-						} else {
-								remaining = "[" + nodes[1] + "][" + nodes[2] + "]";
-						}
-
-							var match = <?= json_encode($match) ?>;
-							var matchSource = <?= json_encode($matchSource) ?>;
-
-							var matchSourceParam = null
-							if(matchSource && matchSource[field]){
-								matchSourceParam = matchSource[field]['params'];
+					if(!$('#__LOCKRECORD__').prop('checked')) {
+						var fields = <?php print json_encode($startup_vars) ?>;
+						var choices = <?= json_encode($choicesForFields) ?>;
+						$.each(fields, function(field,params) {
+							var value = params.params;
+							var nodes = value.split(/\]\[/);
+							for (var i=0; i < nodes.length; i++) {
+								nodes[i] = nodes[i].replace(/^\[/, "");
+								nodes[i] = nodes[i].replace(/\]$/, "");
+							}
+							if ((nodes[0].match(/^\d+$/)) && (nodes.length >= 2)) {
+								var remaining;
+								if (nodes.length == 2) {
+									remaining = "[" + nodes[1] + "]";
+							} else {
+									remaining = "[" + nodes[1] + "][" + nodes[2] + "]";
 							}
 
-							var url = "<?= $url ?>"+"&pid="+<?= $_GET['pid'] ?>;
-							var getLabel = 0;
-							if (($('[name="'+field+'"]').attr("type") == "text") || ($('[name="'+field+'"]').attr("type") == "notes")) {
-								getLabel = 1;
+								var match = <?= json_encode($match) ?>;
+								var matchSource = <?= json_encode($matchSource) ?>;
+
+								var matchSourceParam = null
+								if(matchSource && matchSource[field]){
+									matchSourceParam = matchSource[field]['params'];
+								}
+
+								var url = "<?= $url ?>"+"&pid="+<?= $_GET['pid'] ?>;
+								var getLabel = 0;
+								if (($('[name="'+field+'"]').attr("type") == "text") || ($('[name="'+field+'"]').attr("type") == "notes")) {
+									getLabel = 1;
+								}
+								$.post(url, { thisrecord: '<?= $_GET['id'] ?>', thispid: <?= $_GET['pid'] ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
+									var lastNode = nodes[1];
+									if (nodes.length > 2) {
+										lastNode = nodes[2];
+									}
+
+									var tr = $('tr[sq_id='+field+']');
+									var id = lastNode.match(/\([^\s]+\)/);
+									console.log("Setting "+field+" to "+data);
+									if (id) {    // checkbox
+										id = id[0].replace(/^\(/, "");
+										id = id.replace(/\)$/, "");
+										var input = $('input:checkbox[code="'+id+'"]', tr);
+										if ($(input).length > 0) {
+											if (data == 1) {
+												console.log("A Setting "+field+" to "+data);
+												$(input).prop('checked', true);
+											} else {    // data == 0
+												console.log("B Setting "+field+" to "+data);
+												$(input).prop('checked', false);
+											}
+										} else {
+											console.log("C Setting "+field+" to "+data);
+											$('[name="'+field+'"]').val(data);
+										}
+									} else {
+										// Is this a date field? If so we need to format this date correctly.
+										if($('[name="'+field+'"]').hasClass('hasDatepicker') || (typeof $('[name="'+field+'"]').attr('fv') !== 'undefined' && $('[name="'+field+'"]').attr('fv').includes('date_'))) {
+											var dateFormatStr = $('[name="'+field+'"]').attr('fv');
+											var dateFormatParams = dateFormatStr.split('_');
+											var dFFKey = 1;
+											var dFFormatParams = dateFormatParams.slice(-1)[0].split('');
+											var dFFormatArr = [];
+											for (var i = 0, len = dFFormatParams.length; i < len; i++) {
+												dFFormatArr.push(dFFormatParams[i]+dFFormatParams[i]);
+											}
+											dFFormat = dFFormatArr.join('-');
+
+											var newDate = $.datepicker.formatDate(dFFormat, new Date(data.replace(/\-/g,' ')));
+											
+											console.log('NEW DATE::::');
+											console.log(newDate);
+											console.log(data);
+											
+											if(!newDate.includes('NaN') && data.length >= 1) {
+												var dateTimeStr = '';
+												var dateTimeData = [];
+												if(dateFormatParams[0] == 'datetime') {
+													dataParams = data.split(' ');
+													data = dataParams[0];
+													
+													if(dataParams.length <= 1 || dataParams[1].length < 3) {
+														dateTimeData = ['00', '00', '00'];
+													} else {
+														dateTimeData = dataParams[1].split(':');
+													}
+													var dateTimeVal = dateTimeData[0]+':'+dateTimeData[1];
+													if(dateFormatParams.length > 2) {
+														var dateTimeVal = dateTimeVal+':'+dateTimeData[2];
+													}
+													if(dateTimeVal.length) {
+														dateTimeStr = ' '+dateTimeVal;
+													}
+													
+												}
+
+												$('[name="'+field+'"]').val(newDate + dateTimeStr);
+											}
+										} else {
+											$('[name="'+field+'"]').val(data);
+										}
+										console.log("D Setting "+field+" to "+$('[name="'+field+'"]').val());
+										if ($('[name="'+field+'___radio"][value="'+data+'"]').length > 0) {
+											$('[name="'+field+'___radio"][value="'+data+'"]').prop('checked', true);
+										}
+									}
+								});
 							}
-							$.post(url, { thisrecord: '<?= $_GET['id'] ?>', thispid: <?= $_GET['pid'] ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
-								var lastNode = nodes[1];
-								if (nodes.length > 2) {
-									lastNode = nodes[2];
-								}
-
-								var tr = $('tr[sq_id='+field+']');
-								var id = lastNode.match(/\([^\s]+\)/);
-								console.log("Setting "+field+" to "+data);
-								if (id) {    // checkbox
-									id = id[0].replace(/^\(/, "");
-									id = id.replace(/\)$/, "");
-									var input = $('input:checkbox[code="'+id+'"]', tr);
-									if ($(input).length > 0) {
-										if (data == 1) {
-											console.log("A Setting "+field+" to "+data);
-											$(input).prop('checked', true);
-										} else {    // data == 0
-											console.log("B Setting "+field+" to "+data);
-											$(input).prop('checked', false);
-										}
-									} else {
-										console.log("C Setting "+field+" to "+data);
-										$('[name="'+field+'"]').val(data);
-									}
-								} else {
-									// Is this a date picker field? If so we need to format this date correctly.
-									if($('[name="'+field+'"]').hasClass('hasDatepicker')) {
-										var dateFormatStr = $('[name="'+field+'"]').attr('fv');
-										var dateFormatParams = dateFormatStr.split('_');
-										var dFFKey = 1;
-										var dFFormatParams = dateFormatParams.slice(-1)[0].split('');
-										var dFFormatArr = [];
-										for (var i = 0, len = dFFormatParams.length; i < len; i++) {
-											dFFormatArr.push(dFFormatParams[i]+dFFormatParams[i]);
-										}
-										dFFormat = dFFormatArr.join('-');
-
-										var newDate = $.datepicker.formatDate(dFFormat, new Date(data.replace(/\-/g,' ')));
-										
-										var dateTimeStr = '';
-										var dateTimeData = [];
-										if(dateFormatParams[0] == 'datetime') {
-											dataParams = data.split(' ');
-											data = dataParams[0];
-											
-											if(dataParams.length <= 1 || dataParams[1].length < 3) {
-												dateTimeData = ['00', '00', '00'];
-											} else {
-												dateTimeData = dataParams[1].split(':');
-											}
-											var dateTimeVal = dateTimeData[0]+':'+dateTimeData[1];
-											if(dateFormatParams.length > 2) {
-												var dateTimeVal = dateTimeVal+':'+dateTimeData[2];
-											}
-											if(dateTimeVal.length) {
-												dateTimeStr = ' '+dateTimeVal;
-											}
-											
-										}
-
-										$('[name="'+field+'"]').val(newDate + dateTimeStr);
-									} else {
-										$('[name="'+field+'"]').val(data);
-									}
-									console.log("D Setting "+field+" to "+$('[name="'+field+'"]').val());
-									if ($('[name="'+field+'___radio"][value="'+data+'"]').length > 0) {
-										$('[name="'+field+'___radio"][value="'+data+'"]').prop('checked', true);
-									}
-								}
-							});
-						}
-					});
+						});
+					}
 				}
 			</script>
 		<?php
