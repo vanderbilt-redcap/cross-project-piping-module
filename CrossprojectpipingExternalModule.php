@@ -129,11 +129,6 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			}
 		}
 		
-		// See if the term defined in this hook is used on this page
-		if (!isset($hook_functions[$term])) {
-			hook_log ("Skipping $term on $instrument of $project_id - not used.", "DEBUG");
-			return;
-		}
 		//////////////////////////////
 
 		if(!empty($module_data)) {
@@ -150,6 +145,12 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 					}
 				}
 			}
+		}
+
+		// See if the term defined in this hook is used on this page
+		if (!isset($hook_functions[$term])) {
+			hook_log ("Skipping $term on $instrument of $project_id - not used.", "DEBUG");
+			return;
 		}
 		
 		$startup_vars = $hook_functions[$term];
