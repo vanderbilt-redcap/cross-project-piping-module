@@ -284,6 +284,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 							if (($('[name="'+field+'"]').attr("type") == "text") || ($('[name="'+field+'"]').attr("type") == "notes")) {
 								getLabel = 1;
 							}
+
 							cppAjaxConnections++;
 							// console.log('++cppAjaxConnections = '+cppAjaxConnections);
 							$.post(url, { thisrecord: '<?= $_GET['id'] ?>', thispid: <?= $_GET['pid'] ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
@@ -292,6 +293,10 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 								var lastNode = nodes[1];
 								if (nodes.length > 2) {
 									lastNode = nodes[2];
+								}
+
+								var triggerChangeEvent = function(field){
+									field.change(); // Trigger a change event for branching logic and event listeners in other modules.
 								}
 
 								var tr = $('tr[sq_id='+field+']');
@@ -312,7 +317,10 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 									} else {
 										// console.log("C Setting "+field+" to "+data);
 										$('[name="'+field+'"]').val(data);
+										triggerChangeEvent($('[name="'+field+'"]'));
 									}
+
+									triggerChangeEvent($(input));
 								} else {
 									// Is this a date field? If so we need to format this date correctly.
 									if($('[name="'+field+'"]').hasClass('hasDatepicker') || (typeof $('[name="'+field+'"]').attr('fv') !== 'undefined' && $('[name="'+field+'"]').attr('fv').includes('date_'))) {
@@ -359,9 +367,13 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 									} else {
 										$('[name="'+field+'"]').val(data);
 									}
+
+									triggerChangeEvent($('[name="'+field+'"]'));
+
 									// console.log("D Setting "+field+" to "+$('[name="'+field+'"]').val());
 									if ($('[name="'+field+'___radio"][value="'+data+'"]').length > 0) {
 										$('[name="'+field+'___radio"][value="'+data+'"]').prop('checked', true);
+										triggerChangeEvent($('[name="'+field+'___radio"][value="'+data+'"]'));
 									}
 								}
 								if(cppAjaxConnections == 0) {
