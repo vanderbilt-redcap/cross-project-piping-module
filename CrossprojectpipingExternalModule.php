@@ -9,12 +9,12 @@ require_once dirname(__FILE__) . '/init_hook_functions.php';
 
 class CrossprojectpipingExternalModule extends AbstractExternalModule
 {
-	function hook_data_entry_form_top($project_id, $record) {
-		$this->processRecord($project_id, $record);
+	function hook_data_entry_form_top($project_id, $record, $instrument, $event_id) {
+		$this->processRecord($project_id, $record, $instrument, $event_id);
 	}
 
-	function hook_survey_page_top($project_id, $record) {
-		$this->processRecord($project_id, $record);
+	function hook_survey_page_top($project_id, $record, $instrument, $event_id) {
+		$this->processRecord($project_id, $record, $instrument, $event_id);
 	}
 
 	function pDump($value, $die = false) {
@@ -93,7 +93,22 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		return $subSettings;
 	}
 
-	function processRecord($project_id, $record) {
+	function processRecord($project_id, $record, $instrument, $event_id) {
+		// If there are specific forms specified in the config setitngs then check to make sure we are currently on one of those forms. If not stop piping.
+		$rawSettings = ExternalModules::getProjectSettingsAsArray([$this->PREFIX], $project_id);
+		if (!empty($rawSettings['active-forms']['value']) && !in_array($instrument, $rawSettings['active-forms']['value'])) {
+			return;
+		}
+
+		// If this record is locked let's just stop here, no point in piping on a locked record.
+		$escInst = db_real_escape_string($instrument);
+		$sql = "SELECT * FROM redcap_locking_data WHERE project_id = {$project_id} AND record = {$record} AND event_id = {$event_id} AND form_name = '{$escInst}'";
+		$results = $this->query($sql);
+		$lockData = db_fetch_assoc($results);
+		if(!empty($lockData)) {
+			return;
+		}
+
 		$term = '@PROJECTPIPING';
 		$matchTerm = '@FIELDMATCH';
 		$matchSourceTerm = '@FIELDMATCHSOURCE';
@@ -215,121 +230,158 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 		list($prefix, $version) = ExternalModules::getParseModuleDirectoryPrefixAndVersion($this->getModuleDirectoryName());
 		$url = ExternalModules::getUrl($prefix, "getValue.php");
+		$ajaxLoaderGif = APP_PATH_WEBROOT.'../modules/'.$this->getModuleDirectoryName()."/ajax-loader.gif";
 		?>
 			<script type='text/javascript'>
-				
+				// Create a loading overlay to indicate piping in process
+				var jsCppAjaxLoader = document.createElement('div');
+				jsCppAjaxLoader.setAttribute("id", "cppAjaxLoader");
+				jsCppAjaxLoader.setAttribute("style", "overflow: hidden; text-align: center; position: absolute; top: 0; right: 0; bottom: 0; left: 0; background-color: rgba(255, 255, 255, 0.7); z-index: 9999;");
+				jsCppAjaxLoader.innerHTML = '<!-- x -->';
+				var centerEl = document.getElementById('center');
+				centerEl.insertBefore(jsCppAjaxLoader, centerEl.firstChild);
+				// END loading overlay
+
 				window.onload = function() {
-					if(!$('#__LOCKRECORD__').prop('checked')) {
-						var fields = <?php print json_encode($startup_vars) ?>;
-						var choices = <?= json_encode($choicesForFields) ?>;
-						$.each(fields, function(field,params) {
-							var value = params.params;
-							var nodes = value.split(/\]\[/);
-							for (var i=0; i < nodes.length; i++) {
-								nodes[i] = nodes[i].replace(/^\[/, "");
-								nodes[i] = nodes[i].replace(/\]$/, "");
-							}
-							if ((nodes[0].match(/^\d+$/)) && (nodes.length >= 2)) {
-								var remaining;
-								if (nodes.length == 2) {
-									remaining = "[" + nodes[1] + "]";
+					var fields = <?php print json_encode($startup_vars) ?>;
+					var choices = <?= json_encode($choicesForFields) ?>;
+					$('#form').addClass('piping-loading');
+					$('#center').css('position', 'realative');
+					
+					// Lets add a little more context to the loading overlay (like text and a loading gif)
+					$('#cppAjaxLoader').prepend('<div id="cppAjaxLoaderInner" style="left: 0; right: 0; text-align: center; display: inline-block; position: absolute; top: 200px;"><div style="display: inline-block; padding: 40px; background-color: #fff; border-radius: 3px; font-size: 16px; font-weight: bold; color: #757575; border: 1px solid #757575;">PIPING DATA<br><img src="<?php echo $ajaxLoaderGif; ?>"></div></div>');
+					// A little quick math for a nice position
+					var cppAjaxLoaderInnerOffset = Math.ceil($(window).scrollTop() + (($(window).height()-$('#cppAjaxLoaderInner').outerHeight()) * 0.5));
+					$('#cppAjaxLoaderInner').css('top', cppAjaxLoaderInnerOffset+'px');
+
+					var cppAjaxConnections = 0;
+					var cppProcessing = true;
+					$.each(fields, function(field,params) {
+						var value = params.params;
+						var nodes = value.split(/\]\[/);
+						for (var i=0; i < nodes.length; i++) {
+							nodes[i] = nodes[i].replace(/^\[/, "");
+							nodes[i] = nodes[i].replace(/\]$/, "");
+						}
+						if ((nodes[0].match(/^\d+$/)) && (nodes.length >= 2)) {
+							var remaining;
+							if (nodes.length == 2) {
+								remaining = "[" + nodes[1] + "]";
 							} else {
 									remaining = "[" + nodes[1] + "][" + nodes[2] + "]";
 							}
 
-								var match = <?= json_encode($match) ?>;
-								var matchSource = <?= json_encode($matchSource) ?>;
+							var match = <?= json_encode($match) ?>;
+							var matchSource = <?= json_encode($matchSource) ?>;
 
-								var matchSourceParam = null
-								if(matchSource && matchSource[field]){
-									matchSourceParam = matchSource[field]['params'];
+							var matchSourceParam = null
+							if(matchSource && matchSource[field]){
+								matchSourceParam = matchSource[field]['params'];
+							}
+
+							var url = "<?= $url ?>"+"&pid="+<?= $_GET['pid'] ?>;
+							var getLabel = 0;
+							if (($('[name="'+field+'"]').attr("type") == "text") || ($('[name="'+field+'"]').attr("type") == "notes")) {
+								getLabel = 1;
+							}
+							cppAjaxConnections++;
+							// console.log('++cppAjaxConnections = '+cppAjaxConnections);
+							$.post(url, { thisrecord: '<?= $_GET['id'] ?>', thispid: <?= $_GET['pid'] ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
+								cppAjaxConnections--;
+								// console.log('--cppAjaxConnections = '+cppAjaxConnections);
+								var lastNode = nodes[1];
+								if (nodes.length > 2) {
+									lastNode = nodes[2];
 								}
 
-								var url = "<?= $url ?>"+"&pid="+<?= $_GET['pid'] ?>;
-								var getLabel = 0;
-								if (($('[name="'+field+'"]').attr("type") == "text") || ($('[name="'+field+'"]').attr("type") == "notes")) {
-									getLabel = 1;
-								}
-								$.post(url, { thisrecord: '<?= $_GET['id'] ?>', thispid: <?= $_GET['pid'] ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
-									var lastNode = nodes[1];
-									if (nodes.length > 2) {
-										lastNode = nodes[2];
-									}
-
-									var tr = $('tr[sq_id='+field+']');
-									var id = lastNode.match(/\([^\s]+\)/);
-									console.log("Setting "+field+" to "+data);
-									if (id) {    // checkbox
-										id = id[0].replace(/^\(/, "");
-										id = id.replace(/\)$/, "");
-										var input = $('input:checkbox[code="'+id+'"]', tr);
-										if ($(input).length > 0) {
-											if (data == 1) {
-												console.log("A Setting "+field+" to "+data);
-												$(input).prop('checked', true);
-											} else {    // data == 0
-												console.log("B Setting "+field+" to "+data);
-												$(input).prop('checked', false);
-											}
-										} else {
-											console.log("C Setting "+field+" to "+data);
-											$('[name="'+field+'"]').val(data);
+								var tr = $('tr[sq_id='+field+']');
+								var id = lastNode.match(/\([^\s]+\)/);
+								// console.log("Setting "+field+" to "+data);
+								if (id) {    // checkbox
+									id = id[0].replace(/^\(/, "");
+									id = id.replace(/\)$/, "");
+									var input = $('input:checkbox[code="'+id+'"]', tr);
+									if ($(input).length > 0) {
+										if (data == 1) {
+											// console.log("A Setting "+field+" to "+data);
+											$(input).prop('checked', true);
+										} else {    // data == 0
+											// console.log("B Setting "+field+" to "+data);
+											$(input).prop('checked', false);
 										}
 									} else {
-										// Is this a date field? If so we need to format this date correctly.
-										if($('[name="'+field+'"]').hasClass('hasDatepicker') || (typeof $('[name="'+field+'"]').attr('fv') !== 'undefined' && $('[name="'+field+'"]').attr('fv').includes('date_'))) {
-											var dateFormatStr = $('[name="'+field+'"]').attr('fv');
-											var dateFormatParams = dateFormatStr.split('_');
-											var dFFKey = 1;
-											var dFFormatParams = dateFormatParams.slice(-1)[0].split('');
-											var dFFormatArr = [];
-											for (var i = 0, len = dFFormatParams.length; i < len; i++) {
-												dFFormatArr.push(dFFormatParams[i]+dFFormatParams[i]);
-											}
-											dFFormat = dFFormatArr.join('-');
-
-											var newDate = $.datepicker.formatDate(dFFormat, new Date(data.replace(/\-/g,' ')));
-											
-											console.log('NEW DATE::::');
-											console.log(newDate);
-											console.log(data);
-											
-											if(!newDate.includes('NaN') && data.length >= 1) {
-												var dateTimeStr = '';
-												var dateTimeData = [];
-												if(dateFormatParams[0] == 'datetime') {
-													dataParams = data.split(' ');
-													data = dataParams[0];
-													
-													if(dataParams.length <= 1 || dataParams[1].length < 3) {
-														dateTimeData = ['00', '00', '00'];
-													} else {
-														dateTimeData = dataParams[1].split(':');
-													}
-													var dateTimeVal = dateTimeData[0]+':'+dateTimeData[1];
-													if(dateFormatParams.length > 2) {
-														var dateTimeVal = dateTimeVal+':'+dateTimeData[2];
-													}
-													if(dateTimeVal.length) {
-														dateTimeStr = ' '+dateTimeVal;
-													}
-													
-												}
-
-												$('[name="'+field+'"]').val(newDate + dateTimeStr);
-											}
-										} else {
-											$('[name="'+field+'"]').val(data);
-										}
-										console.log("D Setting "+field+" to "+$('[name="'+field+'"]').val());
-										if ($('[name="'+field+'___radio"][value="'+data+'"]').length > 0) {
-											$('[name="'+field+'___radio"][value="'+data+'"]').prop('checked', true);
-										}
+										// console.log("C Setting "+field+" to "+data);
+										$('[name="'+field+'"]').val(data);
 									}
-								});
-							}
-						});
-					}
+								} else {
+									// Is this a date field? If so we need to format this date correctly.
+									if($('[name="'+field+'"]').hasClass('hasDatepicker') || (typeof $('[name="'+field+'"]').attr('fv') !== 'undefined' && $('[name="'+field+'"]').attr('fv').includes('date_'))) {
+										var dateFormatStr = $('[name="'+field+'"]').attr('fv');
+										var dateFormatParams = dateFormatStr.split('_');
+										var dFFKey = 1;
+										var dFFormatParams = dateFormatParams.slice(-1)[0].split('');
+										var dFFormatArr = [];
+										for (var i = 0, len = dFFormatParams.length; i < len; i++) {
+											dFFormatArr.push(dFFormatParams[i]+dFFormatParams[i]);
+										}
+										dFFormat = dFFormatArr.join('-');
+
+										var newDate = $.datepicker.formatDate(dFFormat, new Date(data.replace(/\-/g,' ')));
+										
+										// console.log('NEW DATE::::');
+										// console.log(newDate);
+										// console.log(data);
+										
+										if(!newDate.includes('NaN') && data.length >= 1) {
+											var dateTimeStr = '';
+											var dateTimeData = [];
+											if(dateFormatParams[0] == 'datetime') {
+												dataParams = data.split(' ');
+												data = dataParams[0];
+												
+												if(dataParams.length <= 1 || dataParams[1].length < 3) {
+													dateTimeData = ['00', '00', '00'];
+												} else {
+													dateTimeData = dataParams[1].split(':');
+												}
+												var dateTimeVal = dateTimeData[0]+':'+dateTimeData[1];
+												if(dateFormatParams.length > 2) {
+													var dateTimeVal = dateTimeVal+':'+dateTimeData[2];
+												}
+												if(dateTimeVal.length) {
+													dateTimeStr = ' '+dateTimeVal;
+												}
+												
+											}
+
+											$('[name="'+field+'"]').val(newDate + dateTimeStr);
+										}
+									} else {
+										$('[name="'+field+'"]').val(data);
+									}
+									// console.log("D Setting "+field+" to "+$('[name="'+field+'"]').val());
+									if ($('[name="'+field+'___radio"][value="'+data+'"]').length > 0) {
+										$('[name="'+field+'___radio"][value="'+data+'"]').prop('checked', true);
+									}
+								}
+								if(cppAjaxConnections == 0) {
+									// Looks like all the ajax requests might be finished. Run a couple checks and then remove loading overlay.
+									if(cppProcessing) {
+										cppProcessing = false;
+										setTimeout(function(){
+											if(cppProcessing == false) {
+												$('#form').removeClass('piping-loading');
+												$('#form').addClass('piping-complete');
+												$('#cppAjaxLoader').remove();
+											}
+										}, 50);
+									}
+								} else if(cppProcessing == false) {
+									cppProcessing = true;
+								}
+							});
+						}
+					});
 				}
 			</script>
 		<?php
