@@ -291,17 +291,15 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 							cppAjaxConnections++;
 							// console.log('++cppAjaxConnections = '+cppAjaxConnections);
 							$.post(url, { thisrecord: '<?= $_GET['id'] ?>', thispid: <?= $_GET['pid'] ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
+								if(data.indexOf('multiple browser tabs of the same REDCap page. If that is not the case') >= 0) {
+									$.post(this);
+									return;
+								}
 								cppAjaxConnections--;
-								// console.log('--cppAjaxConnections = '+cppAjaxConnections);
 								var lastNode = nodes[1];
 								if (nodes.length > 2) {
 									lastNode = nodes[2];
 								}
-
-								// var triggerChangeEvent = function(field){
-								// 	field.change(); // Trigger a change event for branching logic and event listeners in other modules.
-								// 	field.click();
-								// }
 
 								var tr = $('tr[sq_id='+field+']');
 								var id = lastNode.match(/\([^\s]+\)/);
@@ -321,10 +319,8 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 									} else {
 										// console.log("C Setting "+field+" to "+data);
 										$('[name="'+field+'"]').val(data);
-										// triggerChangeEvent($('[name="'+field+'"]'));
 									}
 
-									// triggerChangeEvent($(input));
 								} else {
 									// Is this a date field? If so we need to format this date correctly.
 									if($('[name="'+field+'"]').hasClass('hasDatepicker') || (typeof $('[name="'+field+'"]').attr('fv') !== 'undefined' && $('[name="'+field+'"]').attr('fv').includes('date_'))) {
@@ -339,10 +335,6 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 										dFFormat = dFFormatArr.join('-');
 
 										var newDate = $.datepicker.formatDate(dFFormat, new Date(data.replace(/\-/g,' ')));
-										
-										// console.log('NEW DATE::::');
-										// console.log(newDate);
-										// console.log(data);
 										
 										if(!newDate.includes('NaN') && data.length >= 1) {
 											var dateTimeStr = '';
@@ -372,12 +364,9 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 										$('[name="'+field+'"]').val(data);
 									}
 
-									// triggerChangeEvent($('[name="'+field+'"]'));
-
 									// console.log("D Setting "+field+" to "+$('[name="'+field+'"]').val());
 									if ($('[name="'+field+'___radio"][value="'+data+'"]').length > 0) {
 										$('[name="'+field+'___radio"][value="'+data+'"]').prop('checked', true);
-										// triggerChangeEvent($('[name="'+field+'___radio"][value="'+data+'"]'));
 									}
 								}
 								if(cppAjaxConnections == 0) {
