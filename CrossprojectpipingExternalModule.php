@@ -17,14 +17,6 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		$this->processRecord($project_id, $record, $instrument, $event_id, $repeat_instance);
 	}
 
-	function pDump($value, $die = false) {
-		highlight_string("<?php\n\$data =\n" . var_export($value, true) . ";\n?>");
-		echo '<hr>';
-		if($die) {
-			die();
-		}
-	}
-
 	/**
 	 * Generates nested array of settings keys. Used for multi-level sub_settings.
 	 */
@@ -94,6 +86,11 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 	}
 
 	function processRecord($project_id, $record, $instrument, $event_id, $repeat_instance) {
+		// Do not run on new records with no record ID
+		if(empty($record)) {
+			return;
+		}
+
 		// If there are specific forms specified in the config setitngs then check to make sure we are currently on one of those forms. If not stop piping.
 		$rawSettings = ExternalModules::getProjectSettingsAsArray([$this->PREFIX], $project_id);
 		if (!empty($rawSettings['active-forms']['value']) && !in_array($instrument, $rawSettings['active-forms']['value'])) {
@@ -149,7 +146,9 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		//////////////////////////////
 
 		// If we have module settings lets overwrite $hook_functions with our module settings data
+		$useConfigSettings = false;
 		if(!empty($module_data) && !empty($module_data[0]['project-id'])) {
+			$useConfigSettings = true;
 			$hook_functions = array();
 			foreach($module_data AS $mdk => $mdv) {
 				$projId = $mdv['project-id'];
@@ -236,14 +235,16 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		?>
 			<img style="display: none;" src="<?php echo $ajaxLoaderGif; ?>">
 			<script type='text/javascript'>
-				// Create a loading overlay to indicate piping in process
-				var jsCppAjaxLoader = document.createElement('div');
-				jsCppAjaxLoader.setAttribute("id", "cppAjaxLoader");
-				jsCppAjaxLoader.setAttribute("style", "overflow: hidden; text-align: center; position: absolute; top: 0; right: 0; bottom: 0; left: 0; background-color: rgba(255, 255, 255, 0.7); z-index: 9999;");
-				jsCppAjaxLoader.innerHTML = '<!-- x -->';
-				var centerEl = document.getElementById('center');
-				centerEl.insertBefore(jsCppAjaxLoader, centerEl.firstChild);
-				// END loading overlay
+				<?php if($useConfigSettings): ?>
+					// Create a loading overlay to indicate piping in process
+					var jsCppAjaxLoader = document.createElement('div');
+					jsCppAjaxLoader.setAttribute("id", "cppAjaxLoader");
+					jsCppAjaxLoader.setAttribute("style", "overflow: hidden; text-align: center; position: absolute; top: 0; right: 0; bottom: 0; left: 0; background-color: rgba(255, 255, 255, 0.7); z-index: 9999;");
+					jsCppAjaxLoader.innerHTML = '<!-- x -->';
+					var centerEl = document.getElementById('center');
+					centerEl.insertBefore(jsCppAjaxLoader, centerEl.firstChild);
+					// END loading overlay
+				<?php endif; ?>
 
 				window.onload = function() {
 					var fields = <?php print json_encode($startup_vars) ?>;
