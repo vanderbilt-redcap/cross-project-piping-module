@@ -289,10 +289,17 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 							}
 
 							cppAjaxConnections++;
+							var ajaxCountLimit = 0;
 							// console.log('++cppAjaxConnections = '+cppAjaxConnections);
 							$.post(url, { thisrecord: '<?= $_GET['id'] ?>', thispid: <?= $_GET['pid'] ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
 								if(data.indexOf('multiple browser tabs of the same REDCap page. If that is not the case') >= 0) {
-									$.post(this);
+									if(ajaxCountLimit >= 1000) {
+										return;
+									}
+									console.log('Trying '+field+' again.');
+									ajaxCountLimit++;
+									$.ajax(this);
+
 									return;
 								}
 								cppAjaxConnections--;
