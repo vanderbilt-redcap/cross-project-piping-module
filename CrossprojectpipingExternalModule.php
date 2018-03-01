@@ -298,10 +298,10 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 									lastNode = nodes[2];
 								}
 
-								var triggerChangeEvent = function(field){
-									field.change(); // Trigger a change event for branching logic and event listeners in other modules.
-									field.click();
-								}
+								// var triggerChangeEvent = function(field){
+								// 	field.change(); // Trigger a change event for branching logic and event listeners in other modules.
+								// 	field.click();
+								// }
 
 								var tr = $('tr[sq_id='+field+']');
 								var id = lastNode.match(/\([^\s]+\)/);
@@ -321,10 +321,10 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 									} else {
 										// console.log("C Setting "+field+" to "+data);
 										$('[name="'+field+'"]').val(data);
-										triggerChangeEvent($('[name="'+field+'"]'));
+										// triggerChangeEvent($('[name="'+field+'"]'));
 									}
 
-									triggerChangeEvent($(input));
+									// triggerChangeEvent($(input));
 								} else {
 									// Is this a date field? If so we need to format this date correctly.
 									if($('[name="'+field+'"]').hasClass('hasDatepicker') || (typeof $('[name="'+field+'"]').attr('fv') !== 'undefined' && $('[name="'+field+'"]').attr('fv').includes('date_'))) {
@@ -372,12 +372,12 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 										$('[name="'+field+'"]').val(data);
 									}
 
-									triggerChangeEvent($('[name="'+field+'"]'));
+									// triggerChangeEvent($('[name="'+field+'"]'));
 
 									// console.log("D Setting "+field+" to "+$('[name="'+field+'"]').val());
 									if ($('[name="'+field+'___radio"][value="'+data+'"]').length > 0) {
 										$('[name="'+field+'___radio"][value="'+data+'"]').prop('checked', true);
-										triggerChangeEvent($('[name="'+field+'___radio"][value="'+data+'"]'));
+										// triggerChangeEvent($('[name="'+field+'___radio"][value="'+data+'"]'));
 									}
 								}
 								if(cppAjaxConnections == 0) {
@@ -389,6 +389,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 												$('#form').removeClass('piping-loading');
 												$('#form').addClass('piping-complete');
 												$('#cppAjaxLoader').remove();
+												branchingPipingFix();
 											} else {
 												cppProcessing == true;
 											}
@@ -400,6 +401,11 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 							});
 						}
 					});
+					function branchingPipingFix() {
+						$.each(fields, function(field,params) {
+							doBranching(field);
+						});
+					}
 				}
 			</script>
 		<?php
