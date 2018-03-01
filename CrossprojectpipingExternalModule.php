@@ -9,12 +9,12 @@ require_once dirname(__FILE__) . '/init_hook_functions.php';
 
 class CrossprojectpipingExternalModule extends AbstractExternalModule
 {
-	function hook_data_entry_form_top($project_id, $record, $instrument, $event_id) {
-		$this->processRecord($project_id, $record, $instrument, $event_id);
+	function hook_data_entry_form_top($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
+		$this->processRecord($project_id, $record, $instrument, $event_id, $repeat_instance);
 	}
 
-	function hook_survey_page_top($project_id, $record, $instrument, $event_id) {
-		$this->processRecord($project_id, $record, $instrument, $event_id);
+	function hook_survey_page_top($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
+		$this->processRecord($project_id, $record, $instrument, $event_id, $repeat_instance);
 	}
 
 	function pDump($value, $die = false) {
@@ -93,16 +93,18 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		return $subSettings;
 	}
 
-	function processRecord($project_id, $record, $instrument, $event_id) {
+	function processRecord($project_id, $record, $instrument, $event_id, $repeat_instance) {
 		// If there are specific forms specified in the config setitngs then check to make sure we are currently on one of those forms. If not stop piping.
 		$rawSettings = ExternalModules::getProjectSettingsAsArray([$this->PREFIX], $project_id);
 		if (!empty($rawSettings['active-forms']['value']) && !in_array($instrument, $rawSettings['active-forms']['value'])) {
-			return;
+			if(count($rawSettings['active-forms']['value']) > 1 || !empty($rawSettings['active-forms']['value'][0])) {
+				return;
+			}
 		}
 
 		// If this record is locked let's just stop here, no point in piping on a locked record.
 		$escInst = db_real_escape_string($instrument);
-		$sql = "SELECT * FROM redcap_locking_data WHERE project_id = {$project_id} AND record = {$record} AND event_id = {$event_id} AND form_name = '{$escInst}'";
+		$sql = "SELECT * FROM redcap_locking_data WHERE project_id = {$project_id} AND record = {$record} AND event_id = {$event_id} AND form_name = '{$escInst}' AND instance = {$repeat_instance}";
 		$results = $this->query($sql);
 		$lockData = db_fetch_assoc($results);
 		if(!empty($lockData)) {
@@ -147,7 +149,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		//////////////////////////////
 
 		// If we have module settings lets overwrite $hook_functions with our module settings data
-		if(!empty($module_data)) {
+		if(!empty($module_data) && !empty($module_data[0]['project-id'])) {
 			$hook_functions = array();
 			foreach($module_data AS $mdk => $mdv) {
 				$projId = $mdv['project-id'];
@@ -232,6 +234,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		$url = ExternalModules::getUrl($prefix, "getValue.php");
 		$ajaxLoaderGif = APP_PATH_WEBROOT.'../modules/'.$this->getModuleDirectoryName()."/ajax-loader.gif";
 		?>
+			<img style="display: none;" src="<?php echo $ajaxLoaderGif; ?>">
 			<script type='text/javascript'>
 				// Create a loading overlay to indicate piping in process
 				var jsCppAjaxLoader = document.createElement('div');
@@ -249,7 +252,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 					$('#center').css('position', 'realative');
 					
 					// Lets add a little more context to the loading overlay (like text and a loading gif)
-					$('#cppAjaxLoader').prepend('<div id="cppAjaxLoaderInner" style="left: 0; right: 0; text-align: center; display: inline-block; position: absolute; top: 200px;"><div style="display: inline-block; padding: 40px; background-color: #fff; border-radius: 3px; font-size: 16px; font-weight: bold; color: #757575; border: 1px solid #757575;">PIPING DATA<br><img src="<?php echo $ajaxLoaderGif; ?>"></div></div>');
+					$('#cppAjaxLoader').prepend('<div id="cppAjaxLoaderInner" style="left: 0; right: 0; text-align: center; display: inline-block; position: absolute; top: 200px;"><div style="display: inline-block; padding: 40px; background-color: #fff; border-radius: 3px; font-size: 16px; font-weight: bold; color: #424242; border: 1px solid #757575;">PIPING DATA<br><img src="<?php echo $ajaxLoaderGif; ?>"></div></div>');
 					// A little quick math for a nice position
 					var cppAjaxLoaderInnerOffset = Math.ceil($(window).scrollTop() + (($(window).height()-$('#cppAjaxLoaderInner').outerHeight()) * 0.5));
 					$('#cppAjaxLoaderInner').css('top', cppAjaxLoaderInnerOffset+'px');
@@ -297,6 +300,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 								var triggerChangeEvent = function(field){
 									field.change(); // Trigger a change event for branching logic and event listeners in other modules.
+									field.click();
 								}
 
 								var tr = $('tr[sq_id='+field+']');
@@ -381,10 +385,12 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 									if(cppProcessing) {
 										cppProcessing = false;
 										setTimeout(function(){
-											if(cppProcessing == false) {
+											if(cppAjaxConnections == 0 && cppProcessing == false) {
 												$('#form').removeClass('piping-loading');
 												$('#form').addClass('piping-complete');
 												$('#cppAjaxLoader').remove();
+											} else {
+												cppProcessing == true;
 											}
 										}, 50);
 									}
