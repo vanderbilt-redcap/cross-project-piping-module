@@ -108,6 +108,21 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			return;
 		}
 
+		// If this record is currently marked 'Complete' do not pipe data
+		$fieldName = db_real_escape_string($instrument).'_complete';
+		$sql = "SELECT * FROM redcap_data WHERE project_id = {$project_id} AND record = {$record} AND event_id = {$event_id} AND field_name = '{$fieldName}'";
+		if($repeat_instance >= 2) {
+			$sql .= " AND instance = ".$repeat_instance;
+		} else {
+			$sql .= " AND instance IS NULL";
+		}
+		$compResults = $this->query($sql);
+		$compData = db_fetch_assoc($compResults);
+		if(!empty($compData) && $compData['value'] == 2) {
+			return;
+		}
+
+		// Looks like we're good to start piping
 		$term = '@PROJECTPIPING';
 		$matchTerm = '@FIELDMATCH';
 		$matchSourceTerm = '@FIELDMATCHSOURCE';
@@ -252,11 +267,13 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 					$('#form').addClass('piping-loading');
 					$('#center').css('position', 'realative');
 					
-					// Lets add a little more context to the loading overlay (like text and a loading gif)
-					$('#cppAjaxLoader').prepend('<div id="cppAjaxLoaderInner" style="left: 0; right: 0; text-align: center; display: inline-block; position: absolute; top: 200px;"><div style="display: inline-block; padding: 40px; background-color: #fff; border-radius: 3px; font-size: 16px; font-weight: bold; color: #424242; border: 1px solid #757575;">PIPING DATA<br><img src="<?php echo $ajaxLoaderGif; ?>"></div></div>');
-					// A little quick math for a nice position
-					var cppAjaxLoaderInnerOffset = Math.ceil($(window).scrollTop() + (($(window).height()-$('#cppAjaxLoaderInner').outerHeight()) * 0.5));
-					$('#cppAjaxLoaderInner').css('top', cppAjaxLoaderInnerOffset+'px');
+					<?php if($useConfigSettings): ?>
+						// Lets add a little more context to the loading overlay (like text and a loading gif)
+						$('#cppAjaxLoader').prepend('<div id="cppAjaxLoaderInner" style="left: 0; right: 0; text-align: center; display: inline-block; position: absolute; top: 200px;"><div style="display: inline-block; padding: 40px; background-color: #fff; border-radius: 3px; font-size: 16px; font-weight: bold; color: #424242; border: 1px solid #757575;">PIPING DATA<br><img src="<?php echo $ajaxLoaderGif; ?>"></div></div>');
+						// A little quick math for a nice position
+						var cppAjaxLoaderInnerOffset = Math.ceil($(window).scrollTop() + (($(window).height()-$('#cppAjaxLoaderInner').outerHeight()) * 0.5));
+						$('#cppAjaxLoaderInner').css('top', cppAjaxLoaderInnerOffset+'px');
+					<?php endif; ?>
 
 					var cppAjaxConnections = 0;
 					var cppProcessing = true;
