@@ -18,6 +18,17 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 	}
 
 	/**
+	 * Nicely formatted var_export for checking output .
+	 */
+	function pDump($value, $die = false) {
+		highlight_string("<?php\n\$data =\n" . var_export($value, true) . ";\n?>");
+		echo '<hr>';
+		if($die) {
+			die();
+		}
+	}
+
+	/**
 	 * Generates nested array of settings keys. Used for multi-level sub_settings.
 	 */
 	function getKeysFromConfig($config) {
@@ -305,119 +316,141 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 							if (($('[name="'+field+'"]').attr("type") == "text") || ($('[name="'+field+'"]').attr("type") == "notes")) {
 								getLabel = 1;
 							}
+							
+							if($('tr[sq_id='+field+']').length) {
+								cppAjaxConnections++;
+								var ajaxCountLimit = 0;
+								// console.log('++cppAjaxConnections = '+cppAjaxConnections);
+								$.post(url, { thisrecord: '<?= $_GET['id'] ?>', thispid: <?= $_GET['pid'] ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
+									if(data.length && typeof(data) == 'string' && data.indexOf('multiple browser tabs of the same REDCap page. If that is not the case') >= 0) {
+										if(ajaxCountLimit >= 1000) {
+											return;
+										}
+										// console.log('Trying '+field+' again.');
+										ajaxCountLimit++;
+										$.ajax(this);
 
-							cppAjaxConnections++;
-							var ajaxCountLimit = 0;
-							// console.log('++cppAjaxConnections = '+cppAjaxConnections);
-							$.post(url, { thisrecord: '<?= $_GET['id'] ?>', thispid: <?= $_GET['pid'] ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
-								if(data.indexOf('multiple browser tabs of the same REDCap page. If that is not the case') >= 0) {
-									if(ajaxCountLimit >= 1000) {
 										return;
 									}
-									console.log('Trying '+field+' again.');
-									ajaxCountLimit++;
-									$.ajax(this);
-
-									return;
-								}
-								cppAjaxConnections--;
-								var lastNode = nodes[1];
-								if (nodes.length > 2) {
-									lastNode = nodes[2];
-								}
-
-								var tr = $('tr[sq_id='+field+']');
-								var id = lastNode.match(/\([^\s]+\)/);
-								// console.log("Setting "+field+" to "+data);
-								if (id) {    // checkbox
-									id = id[0].replace(/^\(/, "");
-									id = id.replace(/\)$/, "");
-									var input = $('input:checkbox[code="'+id+'"]', tr);
-									if ($(input).length > 0) {
-										if (data == 1) {
-											// console.log("A Setting "+field+" to "+data);
-											$(input).prop('checked', true);
-										} else {    // data == 0
-											// console.log("B Setting "+field+" to "+data);
-											$(input).prop('checked', false);
-										}
-									} else {
-										// console.log("C Setting "+field+" to "+data);
-										$('[name="'+field+'"]').val(data);
+									
+									cppAjaxConnections--;
+									var lastNode = nodes[1];
+									if (nodes.length > 2) {
+										lastNode = nodes[2];
 									}
 
-								} else {
-									// Is this a date field? If so we need to format this date correctly.
-									if($('[name="'+field+'"]').hasClass('hasDatepicker') || (typeof $('[name="'+field+'"]').attr('fv') !== 'undefined' && $('[name="'+field+'"]').attr('fv').includes('date_'))) {
-										var dateFormatStr = $('[name="'+field+'"]').attr('fv');
-										var dateFormatParams = dateFormatStr.split('_');
-										var dFFKey = 1;
-										var dFFormatParams = dateFormatParams.slice(-1)[0].split('');
-										var dFFormatArr = [];
-										for (var i = 0, len = dFFormatParams.length; i < len; i++) {
-											dFFormatArr.push(dFFormatParams[i]+dFFormatParams[i]);
-										}
-										dFFormat = dFFormatArr.join('-');
-
-										var newDate = $.datepicker.formatDate(dFFormat, new Date(data.replace(/\-/g,' ')));
-										
-										if(!newDate.includes('NaN') && data.length >= 1) {
-											var dateTimeStr = '';
-											var dateTimeData = [];
-											if(dateFormatParams[0] == 'datetime') {
-												dataParams = data.split(' ');
-												data = dataParams[0];
-												
-												if(dataParams.length <= 1 || dataParams[1].length < 3) {
-													dateTimeData = ['00', '00', '00'];
+									var tr = $('tr[sq_id='+field+']');
+									var id = lastNode.match(/\([^\s]+\)/);
+									// console.log("Setting "+field+" to "+data);
+									if (typeof(data) == 'object') {    // checkbox
+										$.each(data, function( index, value ) {
+											var input = $('input:checkbox[code="'+index+'"]', tr);
+											if ($(input).length > 0) {
+												if (value == 1) {
+													$(input).prop('checked', true);
+													$('input:hidden[name="__chk__'+field+'_RC_'+index+'"]').val(index);
 												} else {
-													dateTimeData = dataParams[1].split(':');
+													$(input).prop('checked', false);
+													$('input:hidden[name="__chk__'+field+'_RC_'+index+'"]').val('');
 												}
-												var dateTimeVal = dateTimeData[0]+':'+dateTimeData[1];
-												if(dateFormatParams.length > 2) {
-													var dateTimeVal = dateTimeVal+':'+dateTimeData[2];
-												}
-												if(dateTimeVal.length) {
-													dateTimeStr = ' '+dateTimeVal;
-												}
-												
+												$(input).change();
 											}
-
-											$('[name="'+field+'"]').val(newDate + dateTimeStr);
+										});
+									} else if (id) {    // checkbox
+										id = id[0].replace(/^\(/, "");
+										id = id.replace(/\)$/, "");
+										var input = $('input:checkbox[code="'+id+'"]', tr);
+										if ($(input).length > 0) {
+											if (data == 1) {
+												// console.log("A Setting "+field+" to "+data);
+												$(input).prop('checked', true);
+											} else {    // data == 0
+												// console.log("B Setting "+field+" to "+data);
+												$(input).prop('checked', false);
+											}
+											$(input).change();
+										} else {
+											// console.log("C Setting "+field+" to "+data);
+											$('[name="'+field+'"]').val(data);
+											$('[name="'+field+'"]').change();
 										}
-									} else {
-										$('[name="'+field+'"]').val(data);
-									}
 
-									// console.log("D Setting "+field+" to "+$('[name="'+field+'"]').val());
-									if ($('[name="'+field+'___radio"][value="'+data+'"]').length > 0) {
-										$('[name="'+field+'___radio"][value="'+data+'"]').prop('checked', true);
-									}
-								}
-								if(cppAjaxConnections == 0) {
-									// Looks like all the ajax requests might be finished. Run a couple checks and then remove loading overlay.
-									if(cppProcessing) {
-										cppProcessing = false;
-										setTimeout(function(){
-											if(cppAjaxConnections == 0 && cppProcessing == false) {
-												$('#form').removeClass('piping-loading');
-												$('#form').addClass('piping-complete');
-												$('#cppAjaxLoader').remove();
-												branchingPipingFix();
-											} else {
-												cppProcessing == true;
+									} else {
+										// Is this a date field? If so we need to format this date correctly.
+										if($('[name="'+field+'"]').hasClass('hasDatepicker') || (typeof $('[name="'+field+'"]').attr('fv') !== 'undefined' && $('[name="'+field+'"]').attr('fv').includes('date_'))) {
+											var dateFormatStr = $('[name="'+field+'"]').attr('fv');
+											var dateFormatParams = dateFormatStr.split('_');
+											var dFFKey = 1;
+											var dFFormatParams = dateFormatParams.slice(-1)[0].split('');
+											var dFFormatArr = [];
+											for (var i = 0, len = dFFormatParams.length; i < len; i++) {
+												dFFormatArr.push(dFFormatParams[i]+dFFormatParams[i]);
 											}
-										}, 50);
+											dFFormat = dFFormatArr.join('-');
+
+											var newDate = $.datepicker.formatDate(dFFormat, new Date(data.replace(/\-/g,' ')));
+											
+											if(!newDate.includes('NaN') && data.length >= 1) {
+												var dateTimeStr = '';
+												var dateTimeData = [];
+												if(dateFormatParams[0] == 'datetime') {
+													dataParams = data.split(' ');
+													data = dataParams[0];
+													
+													if(dataParams.length <= 1 || dataParams[1].length < 3) {
+														dateTimeData = ['00', '00', '00'];
+													} else {
+														dateTimeData = dataParams[1].split(':');
+													}
+													var dateTimeVal = dateTimeData[0]+':'+dateTimeData[1];
+													if(dateFormatParams.length > 2) {
+														var dateTimeVal = dateTimeVal+':'+dateTimeData[2];
+													}
+													if(dateTimeVal.length) {
+														dateTimeStr = ' '+dateTimeVal;
+													}
+													
+												}
+
+												$('[name="'+field+'"]').val(newDate + dateTimeStr);
+												$('[name="'+field+'"]').change();
+											}
+										} else {
+											$('[name="'+field+'"]').val(data);
+											$('[name="'+field+'"]').change();
+										}
+
+										// console.log("D Setting "+field+" to "+$('[name="'+field+'"]').val());
+										if ($('[name="'+field+'___radio"][value="'+data+'"]').length > 0) {
+											$('[name="'+field+'___radio"][value="'+data+'"]').prop('checked', true);
+											$('[name="'+field+'___radio"][value="'+data+'"]').change();
+										}
 									}
-								} else if(cppProcessing == false) {
-									cppProcessing = true;
-								}
-							});
+									if(cppAjaxConnections == 0) {
+										// Looks like all the ajax requests might be finished. Run a couple checks and then remove loading overlay.
+										if(cppProcessing) {
+											cppProcessing = false;
+											setTimeout(function(){
+												if(cppAjaxConnections == 0 && cppProcessing == false) {
+													$('#form').removeClass('piping-loading');
+													$('#form').addClass('piping-complete');
+													$('#cppAjaxLoader').remove();
+													branchingPipingFix();
+												} else {
+													cppProcessing == true;
+												}
+											}, 50);
+										}
+									} else if(cppProcessing == false) {
+										cppProcessing = true;
+									}
+								});
+							}
 						}
 					});
 					function branchingPipingFix() {
 						$.each(fields, function(field,params) {
-							doBranching(field);
+							var dblVal = doBranching(field);
 						});
 					}
 				}
