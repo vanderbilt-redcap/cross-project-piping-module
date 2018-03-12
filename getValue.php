@@ -6,7 +6,9 @@
 
 	require_once APP_PATH_DOCROOT.'Classes/LogicTester.php';
 
-	\REDCap::allowProjects(array($_POST['otherpid'], $_POST['thispid']));
+	if($_POST['otherpid'] != $_POST['thispid']) {
+		\REDCap::allowProjects(array($_POST['otherpid'], $_POST['thispid']));
+	}
 
 	$thisjson = \REDCap::getData($_POST['thispid'], 'json', array($_POST['thisrecord']), array($_POST['thismatch'])); 
 	$thismatch = trim($_POST['thismatch']);
@@ -77,6 +79,7 @@
 	} else {
 		$logicItems = array($fieldName => $logic);
 	}
+
 
 	$found = false;
 	foreach ($data as $record => $recData) {

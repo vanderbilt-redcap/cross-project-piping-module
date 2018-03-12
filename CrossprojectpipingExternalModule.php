@@ -287,6 +287,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 					<?php endif; ?>
 
 					var cppAjaxConnections = 0;
+					var cppFoundField = false;
 					var cppProcessing = true;
 					$.each(fields, function(field,params) {
 						var value = params.params;
@@ -317,7 +318,8 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 								getLabel = 1;
 							}
 							
-							if($('tr[sq_id='+field+']').length) {
+							if(field.length && $('tr[sq_id='+field+']').length) {
+								cppFoundField = true;
 								cppAjaxConnections++;
 								var ajaxCountLimit = 0;
 								// console.log('++cppAjaxConnections = '+cppAjaxConnections);
@@ -448,6 +450,14 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 							}
 						}
 					});
+					if(cppFoundField == false) {
+						// Looks like we never found a field. Remove loading overlay.
+						cppProcessing = false;
+						$('#form').removeClass('piping-loading');
+						$('#form').addClass('piping-complete');
+						$('#cppAjaxLoader').remove();
+						branchingPipingFix();
+					}
 					function branchingPipingFix() {
 						$.each(fields, function(field,params) {
 							var dblVal = doBranching(field);
