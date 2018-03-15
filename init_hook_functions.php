@@ -1,5 +1,5 @@
 <?php
-	
+namespace Vanderbilt\CrossprojectpipingExternalModule;
 /**
 
 	This is a utility script that builds an array of hook functions based on a convention of using
@@ -30,7 +30,7 @@ function getHookFunctions($pid) {
 	
 	# Scan through pages rendered on this page searching for @terms
 	if ($pid) {
-		$metadataArray = REDCap::getDataDictionary($_GET['pid'], 'array');
+		$metadataArray = \REDCap::getDataDictionary($_GET['pid'], 'array');
 		foreach ($metadataArray as $fieldName => $fieldAttrs) {
 			if ($fieldAttrs['field_note'] || $fieldAttrs['field_annotation']) {
 				# Check both field_note and field_annotation fields
