@@ -101,7 +101,7 @@ function hook_log($message, $type = 'INFO', $prefix = '') {
 		if ($prefix) $msg = "[$prefix] " . $msg; 
 		
 		// Output to error log
-		error_log($project_id . "\t" . basename($calling_file, '.php') . "\t" . $calling_function . "\t" . $type . "\t" . $msg);
+		//error_log($project_id . "\t" . basename($calling_file, '.php') . "\t" . $calling_function . "\t" . $type . "\t" . $msg);
 
 		// Output to screen
 		if ($hook_debug_level == 3) {
