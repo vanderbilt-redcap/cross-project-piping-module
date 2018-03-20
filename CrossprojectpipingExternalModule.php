@@ -102,7 +102,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			return;
 		}
 
-		// If there are specific forms specified in the config setitngs then check to make sure we are currently on one of those forms. If not stop piping.
+		// If there are specific forms specified in the config settings then check to make sure we are currently on one of those forms. If not stop piping.
 		$rawSettings = ExternalModules::getProjectSettingsAsArray([$this->PREFIX], $project_id);
 		if (!empty($rawSettings['active-forms']['value']) && !in_array($instrument, $rawSettings['active-forms']['value'])) {
 			if(count($rawSettings['active-forms']['value']) > 1 || !empty($rawSettings['active-forms']['value'][0])) {
@@ -112,7 +112,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 		// If this record is locked let's just stop here, no point in piping on a locked record.
 		$escInst = db_real_escape_string($instrument);
-		$sql = "SELECT * FROM redcap_locking_data WHERE project_id = {$project_id} AND record = {$record} AND event_id = {$event_id} AND form_name = '{$escInst}' AND instance = {$repeat_instance}";
+		$sql = "SELECT * FROM redcap_locking_data WHERE project_id = {$project_id} AND record = '{$record}' AND event_id = {$event_id} AND form_name = '{$escInst}' AND instance = {$repeat_instance}";
 		$results = $this->query($sql);
 		$lockData = db_fetch_assoc($results);
 		if(!empty($lockData)) {
@@ -121,7 +121,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 		// If this record is currently marked 'Complete' do not pipe data
 		$fieldName = db_real_escape_string($instrument).'_complete';
-		$sql = "SELECT * FROM redcap_data WHERE project_id = {$project_id} AND record = {$record} AND event_id = {$event_id} AND field_name = '{$fieldName}'";
+		$sql = "SELECT * FROM redcap_data WHERE project_id = {$project_id} AND record = '{$record}' AND event_id = {$event_id} AND field_name = '{$fieldName}'";
 		if($repeat_instance >= 2) {
 			$sql .= " AND instance = ".$repeat_instance;
 		} else {
