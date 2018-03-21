@@ -112,17 +112,19 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 		// If this record is locked let's just stop here, no point in piping on a locked record.
 		$escInst = db_real_escape_string($instrument);
-		$sql = "SELECT * FROM redcap_locking_data WHERE project_id = {$project_id} AND record = '{$record}' AND event_id = {$event_id} AND form_name = '{$escInst}' AND instance = {$repeat_instance}";
-		$results = $this->query($sql);
-		$lockData = db_fetch_assoc($results);
-		if(!empty($lockData)) {
-			return;
+		if(is_numeric($repeat_instance)) {
+			$sql = "SELECT * FROM redcap_locking_data WHERE project_id = {$project_id} AND record = '{$record}' AND event_id = {$event_id} AND form_name = '{$escInst}' AND instance = {$repeat_instance}";
+			$results = $this->query($sql);
+			$lockData = db_fetch_assoc($results);
+			if(!empty($lockData)) {
+				return;
+			}
 		}
 
 		// If this record is currently marked 'Complete' do not pipe data
 		$fieldName = db_real_escape_string($instrument).'_complete';
 		$sql = "SELECT * FROM redcap_data WHERE project_id = {$project_id} AND record = '{$record}' AND event_id = {$event_id} AND field_name = '{$fieldName}'";
-		if($repeat_instance >= 2) {
+		if(is_numeric($repeat_instance) && $repeat_instance >= 2) {
 			$sql .= " AND instance = ".$repeat_instance;
 		} else {
 			$sql .= " AND instance IS NULL";
