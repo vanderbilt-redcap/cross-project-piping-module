@@ -9,11 +9,11 @@ require_once dirname(__FILE__) . '/init_hook_functions.php';
 
 class CrossprojectpipingExternalModule extends AbstractExternalModule
 {
-	function hook_data_entry_form_top($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
+	function redcap_data_entry_form_top($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
 		$this->processRecord($project_id, $record, $instrument, $event_id, $repeat_instance);
 	}
 
-	function hook_survey_page_top($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
+	function redcap_survey_page_top($project_id, $record, $instrument, $event_id, $group_id, $survey_hash, $response_id, $repeat_instance) {
 		$this->processRecord($project_id, $record, $instrument, $event_id, $repeat_instance);
 	}
 
@@ -101,6 +101,9 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		if(empty($record)) {
 			return;
 		}
+		if(!is_int($repeat_instance)) {
+			$repeat_instance = 1;
+		}
 
 		// If there are specific forms specified in the config settings then check to make sure we are currently on one of those forms. If not stop piping.
 		$rawSettings = ExternalModules::getProjectSettingsAsArray([$this->PREFIX], $project_id);
@@ -112,19 +115,17 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 		// If this record is locked let's just stop here, no point in piping on a locked record.
 		$escInst = db_real_escape_string($instrument);
-		if(is_numeric($repeat_instance)) {
-			$sql = "SELECT * FROM redcap_locking_data WHERE project_id = {$project_id} AND record = '{$record}' AND event_id = {$event_id} AND form_name = '{$escInst}' AND instance = {$repeat_instance}";
-			$results = $this->query($sql);
-			$lockData = db_fetch_assoc($results);
-			if(!empty($lockData)) {
-				return;
-			}
+		$sql = "SELECT * FROM redcap_locking_data WHERE project_id = {$project_id} AND record = '{$record}' AND event_id = {$event_id} AND form_name = '{$escInst}' AND instance = {$repeat_instance}";
+		$results = $this->query($sql);
+		$lockData = db_fetch_assoc($results);
+		if(!empty($lockData)) {
+			return;
 		}
 
 		// If this record is currently marked 'Complete' do not pipe data
 		$fieldName = db_real_escape_string($instrument).'_complete';
 		$sql = "SELECT * FROM redcap_data WHERE project_id = {$project_id} AND record = '{$record}' AND event_id = {$event_id} AND field_name = '{$fieldName}'";
-		if(is_numeric($repeat_instance) && $repeat_instance >= 2) {
+		if($repeat_instance >= 2) {
 			$sql .= " AND instance = ".$repeat_instance;
 		} else {
 			$sql .= " AND instance IS NULL";

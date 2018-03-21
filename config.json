@@ -19,8 +19,8 @@
 	],
 	
 	"permissions": [
-		"hook_data_entry_form_top",
-		"hook_survey_page_top",
+		"redcap_data_entry_form_top",
+		"redcap_survey_page_top",
 		"select_data"
 	],
 
