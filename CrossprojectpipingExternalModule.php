@@ -187,7 +187,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 					$hook_functions[$term][$pfv['data-destination-field']] = array('params' => '['.$projId.']['.(empty($pfv['data-source-field']) ? $pfv['data-destination-field'] : $pfv['data-source-field']).']');
 					$hook_functions[$matchTerm][$pfv['data-destination-field']] = array('params' => $fieldMatch);
 					if(!empty($fieldMatchSource)) {
-						$hook_functions[$matchSourceTerm][$pfv['data-destination-field']] = $fieldMatchSource;
+						$hook_functions[$matchSourceTerm][$pfv['data-destination-field']] = array('params' => $fieldMatchSource);
 					}
 				}
 			}
