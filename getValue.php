@@ -42,6 +42,9 @@
 	}
 
 	$data = \REDCap::getData($_POST['otherpid'], 'array', array($recordId));
+	if(empty($data)) {
+		return;
+	}
 
 	$logic = $_POST['otherlogic'];
 	$nodes = preg_split("/\]\[/", $logic);
@@ -87,7 +90,7 @@
 		foreach ($logicItems as $field => $logicItem) {
 			if (\LogicTester::isValid($logicItem)) {
 				$result = \LogicTester::apply($logicItem, $recData, $Proj, true);
-				if ($result) {
+				if ($result || $result === "0" || $result === 0) {
 					$choices = json_decode($_POST['choices'], true);
 					if (isset($choices[$field])) {
 						if (isset($choices[$field][$result])) {
@@ -102,9 +105,7 @@
 					} else {
 						$returnVal = $result;
 					}
-					if(!empty($returnVal)){
-						echo $returnVal;
-					}
+					echo $returnVal;
 					$found = true;
 					break;
 				} else if(!empty($recData[$Proj->firstEventId][substr($logicItem, 1, -1)]) && is_array($recData[$Proj->firstEventId][substr($logicItem, 1, -1)])) {
