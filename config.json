@@ -3,7 +3,7 @@
 
 	"namespace": "Vanderbilt\\CrossprojectpipingExternalModule",
 
-	"description": "Cross-Project Piping pipes from one field in one project into another field in another project. The projects have to be MATCHED on a third field in both projects. Enable this module in the DESTINATION project and select appropriate fields in the configure panel. As of 02/28/2018 the use of action tags for piping is deprecated and will be removed in a future release.",
+	"description": "Cross-Project Piping pipes from one field in one project into another field in another project. The projects have to be MATCHED on a third field in both projects. Enable this module in the DESTINATION project and select appropriate fields in the configure panel.",
 
 	"authors": [
 		{
@@ -28,33 +28,7 @@
 	},
 
 	"system-settings": [
-		{
-			"key": "term",
-			"name": "DEPRECATED: Action Tag Term on to/destination field (default: @PROJECTPIPING); '=' (no spaces, no quotes) value is logic with [pid][field_name] or [pid][event_name][field_name] (e.g., @PROJECTPIPING=[123][event][field] (longitudinal) or @PROJECTPIPING=[123][field] (classical)",
-			"allow-project-overrides": true,
-			"required": true,
-			"repeatable": false,
-			"super-users-only": true,
-			"type": "text"
-		},
-		{
-			"key": "match-term",
-			"name": "DEPRECATED: Action Tag Term on to/destination field (default: @FIELDMATCH); '=' (no spaces, no quotes) value is field name in the destination project (to) that contains the value to use for matching. E.g., @FIELDMATCH=screening_id where screening_id is the field on the current destination project that EXACTLY EQUALS the field specified by the @FIELDMATCHSOURCE action tag.",
-			"allow-project-overrides": true,
-			"required": true,
-			"repeatable": false,
-			"super-users-only": true,
-			"type": "text"
-		},
-		{
-			"key": "match-source-term",
-			"name": "DEPRECATED: Action Tag Term on to/destination field (default: @FIELDMATCHSOURCE); '=' (no spaces, no quotes) value is field name in the source project (from) that contains the value to use for matching.  If this action tag is omitted, the record id field on the source project will be used.  E.g., @FIELDMATCHSOURCE=screening_id where screening_id is the field on the source project that EXACTLY EQUALS the field on the destination project specified by the @FIELDMATCH action tag.",
-			"allow-project-overrides": true,
-			"required": true,
-			"repeatable": false,
-			"super-users-only": true,
-			"type": "text"
-		}
+		
 	],
 	
 	"project-settings": [
@@ -64,31 +38,27 @@
 			"required": false,
 			"type": "sub_settings",
 			"repeatable": true,
-			"super-users-only": true,
 			"sub_settings": [
 				{
 					"key": "project-id",
 					"name": "Source Project",
 					"required": false,
 					"type": "project-id",
-					"repeatable": false,
-					"super-users-only": true
+					"repeatable": false
 				},
 				{
 					"key": "field-match",
 					"name": "Unique Match Field: Unique field used to match records across projects (usually the record_id)",
 					"required": false,
 					"type": "field-list",
-					"repeatable": false,
-					"super-users-only": true
+					"repeatable": false
 				},
 				{
 					"key": "field-match-source",
 					"name": "Alternate Source Match Field: This is only used if the Unique Match Field in the destination project has a different variable name from the Unique Match Field in the source project",
 					"required": false,
 					"type": "text",
-					"repeatable": false,
-					"super-users-only": true
+					"repeatable": false
 				},
 				{
 					"key": "project-fields",
@@ -96,23 +66,20 @@
 					"required": false,
 					"type": "sub_settings",
 					"repeatable": true,
-					"super-users-only": true,
 					"sub_settings": [
 						{
 							"key": "data-destination-field",
 							"name": "Destination Field",
 							"required": false,
 							"type": "field-list",
-							"repeatable": false,
-							"super-users-only": true
+							"repeatable": false
 						},
 						{
 							"key": "data-source-field",
 							"name": "Source Field: This field is only needed if the Destination Field has a different variable name from the Source Field on the source project",
 							"required": false,
 							"type": "text",
-							"repeatable": false,
-							"super-users-only": true
+							"repeatable": false
 						}
 					]
 				}
@@ -123,8 +90,7 @@
 			"name": "Active Form(s): Limit piping to only these forms",
 			"required": false,
 			"type": "form-list",
-			"repeatable": true,
-			"super-users-only": true
+			"repeatable": true
 		}
 	]
 }
