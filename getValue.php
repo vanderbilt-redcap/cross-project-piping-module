@@ -26,11 +26,10 @@
 	if(empty($matchRecord)){
 		// Return without echo-ing any values.
 		return;
-	}
-	else if(empty($matchSource)){
+	} else if(empty($matchSource) && $thismatch == 'record_id') {
 		$recordId = $matchRecord;
-	}
-	else{
+	} else {
+		$matchSource = (empty($matchSource)) ? $thismatch : $matchSource ;
 		$filterData = \REDCap::getData($_POST['otherpid'], 'array', null, null, null, null, false, false, false, "([$matchSource] = '$matchRecord')");
 		if(count($filterData) != 1){
 			// Either there were no matches or multiple matches.  Either way, we want to return without echo-ing any values.

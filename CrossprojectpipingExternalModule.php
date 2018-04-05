@@ -298,7 +298,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 					// END loading overlay
 				}
 
-				function branchingPipingFix() {
+				function branchingPipingFix(fields) {
 					$.each(fields, function(field,params) {
 						var dblVal = doBranching(field);
 					});
@@ -473,7 +473,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 													$('#form').removeClass('piping-loading');
 													$('#form').addClass('piping-complete');
 													$('#cppAjaxLoader').remove();
-													branchingPipingFix();
+													branchingPipingFix(fields);
 												} else {
 													cppProcessing == true;
 												}
@@ -492,7 +492,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 						$('#form').removeClass('piping-loading');
 						$('#form').addClass('piping-complete');
 						$('#cppAjaxLoader').remove();
-						branchingPipingFix();
+						branchingPipingFix(fields);
 					}
 				}
 			</script>
