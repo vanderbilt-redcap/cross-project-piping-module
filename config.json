@@ -91,6 +91,22 @@
 			"required": false,
 			"type": "form-list",
 			"repeatable": true
+		}, {
+			"key": "piping-mode",
+			"name": "Piping Mode",
+			"required": true,
+			"type": "dropdown",
+			"choices": [
+				{
+					"value": 0,
+					"name": "Auto pipe on Incomplete Form(s)"
+				},
+				{
+					"value": 1,
+					"name": "Piping Button at top of Form(s)"
+				}
+			],
+			"repeatable": false
 		}
 	]
 }

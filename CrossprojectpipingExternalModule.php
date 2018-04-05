@@ -9,6 +9,13 @@ require_once dirname(__FILE__) . '/init_hook_functions.php';
 
 class CrossprojectpipingExternalModule extends AbstractExternalModule
 {
+	public $pipingMode;
+
+	function __construct() {
+		parent::__construct();
+		$this->pipingMode = 0;
+	}
+
 	function redcap_data_entry_form_top($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
 		$this->processRecord($project_id, $record, $instrument, $event_id, $repeat_instance);
 	}
@@ -81,7 +88,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		$subSettings = [];
 		$rawSettings = ExternalModules::getProjectSettingsAsArray([$this->PREFIX], $project_id);
 		$subSettingCount = count($rawSettings[$keys[0]['key']]['value']);
-
+		$this->pipingMode = (isset($rawSettings['piping-mode']['value'])) ? $rawSettings['piping-mode']['value'] : 0 ;
 		for($i=0; $i<$subSettingCount; $i++){
 			$subSetting = [];
 			foreach($keys as $key){
@@ -122,7 +129,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			return;
 		}
 
-		// If this record is currently marked 'Complete' do not pipe data
+		// If this record is NOT currently marked 'Incomplete' do not pipe data
 		$fieldName = db_real_escape_string($instrument).'_complete';
 		$sql = "SELECT * FROM redcap_data WHERE project_id = {$project_id} AND record = '{$record}' AND event_id = {$event_id} AND field_name = '{$fieldName}'";
 		if($repeat_instance >= 2) {
@@ -132,7 +139,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		}
 		$compResults = $this->query($sql);
 		$compData = db_fetch_assoc($compResults);
-		if(!empty($compData) && $compData['value'] == 2) {
+		if(!empty($compData) && $compData['value'] >= 1) {
 			return;
 		}
 
@@ -264,7 +271,23 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		?>
 			<img style="display: none;" src="<?php echo $ajaxLoaderGif; ?>">
 			<script type='text/javascript'>
-				<?php if($useConfigSettings): ?>
+				<?php if($this->pipingMode != 1): ?>
+					initiateLoadingOverlay();
+				<?php endif; ?>
+
+				window.onload = function() {
+					<?php if($this->pipingMode == 1): ?>
+						$('#form table#questiontable>tbody').prepend('<tr style="border-top: 1px solid #DDDDDD;"><td style="text-align: center; padding: 6px;" colspan="2"><button id="ccpPipeData">Initiate Data Piping</button></td></tr>');
+						$('#ccpPipeData').click(function(evt){
+							evt.preventDefault();
+							runCrossProjectPiping();
+						});
+					<?php else: ?>
+						runCrossProjectPiping();
+					<?php endif; ?>
+				}
+
+				function initiateLoadingOverlay() {
 					// Create a loading overlay to indicate piping in process
 					var jsCppAjaxLoader = document.createElement('div');
 					jsCppAjaxLoader.setAttribute("id", "cppAjaxLoader");
@@ -273,9 +296,19 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 					var centerEl = document.getElementById('center');
 					centerEl.insertBefore(jsCppAjaxLoader, centerEl.firstChild);
 					// END loading overlay
-				<?php endif; ?>
+				}
 
-				window.onload = function() {
+				function branchingPipingFix() {
+					$.each(fields, function(field,params) {
+						var dblVal = doBranching(field);
+					});
+				}
+
+				function runCrossProjectPiping() {
+					<?php if($this->pipingMode == 1): ?>
+						initiateLoadingOverlay();
+					<?php endif; ?>
+
 					var fields = <?php print json_encode($startup_vars) ?>;
 					var choices = <?= json_encode($choicesForFields) ?>;
 					$('#form').addClass('piping-loading');
@@ -460,11 +493,6 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 						$('#form').addClass('piping-complete');
 						$('#cppAjaxLoader').remove();
 						branchingPipingFix();
-					}
-					function branchingPipingFix() {
-						$.each(fields, function(field,params) {
-							var dblVal = doBranching(field);
-						});
 					}
 				}
 			</script>
