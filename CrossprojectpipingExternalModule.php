@@ -298,9 +298,17 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 					// END loading overlay
 				}
 
+				var branchingFields = {};
+				function addBranchingField(field, element) {
+					branchingFields[field] = {element: element};
+				}
+
 				function branchingPipingFix(fields) {
 					$.each(fields, function(field,params) {
-						var dblVal = doBranching(field);
+						if(field in branchingFields) {
+							branchingFields[field].element.change();
+							var dblVal = doBranching(field);
+						}
 					});
 				}
 
@@ -391,7 +399,8 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 													$(input).prop('checked', false);
 													$('input:hidden[name="__chk__'+field+'_RC_'+index+'"]').val('');
 												}
-												$(input).change();
+												addBranchingField(field, input);
+												// $(input).change();
 											}
 										});
 									} else if (id) {    // checkbox
@@ -406,11 +415,13 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 												// console.log("B Setting "+field+" to "+data);
 												$(input).prop('checked', false);
 											}
-											$(input).change();
+											addBranchingField(field, input);
+											// $(input).change();
 										} else {
 											// console.log("C Setting "+field+" to "+data);
 											$('[name="'+field+'"]').val(data);
-											$('[name="'+field+'"]').change();
+											addBranchingField(field, $('[name="'+field+'"]'));
+											// $('[name="'+field+'"]').change();
 										}
 
 									} else {
@@ -451,17 +462,20 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 												}
 
 												$('[name="'+field+'"]').val(newDate + dateTimeStr);
-												$('[name="'+field+'"]').change();
+												addBranchingField(field, $('[name="'+field+'"]'));
+												// $('[name="'+field+'"]').change();
 											}
 										} else {
 											$('[name="'+field+'"]').val(data);
-											$('[name="'+field+'"]').change();
+											addBranchingField(field, $('[name="'+field+'"]'));
+											// $('[name="'+field+'"]').change();
 										}
 
 										// console.log("D Setting "+field+" to "+$('[name="'+field+'"]').val());
 										if ($('[name="'+field+'___radio"][value="'+data+'"]').length > 0) {
 											$('[name="'+field+'___radio"][value="'+data+'"]').prop('checked', true);
-											$('[name="'+field+'___radio"][value="'+data+'"]').change();
+											addBranchingField(field, $('[name="'+field+'___radio"][value="'+data+'"]'));
+											// $('[name="'+field+'___radio"][value="'+data+'"]').change();
 										}
 									}
 									if(cppAjaxConnections == 0) {
