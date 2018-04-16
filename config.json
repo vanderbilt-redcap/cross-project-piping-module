@@ -91,7 +91,8 @@
 			"required": false,
 			"type": "form-list",
 			"repeatable": true
-		}, {
+		},
+		{
 			"key": "piping-mode",
 			"name": "Piping Mode",
 			"required": true,
@@ -99,11 +100,31 @@
 			"choices": [
 				{
 					"value": 0,
-					"name": "Auto pipe on Incomplete Form(s)"
+					"name": "Auto pipe on matching Form(s)"
 				},
 				{
 					"value": 1,
 					"name": "Piping Button at top of Form(s)"
+				}
+			],
+			"repeatable": false
+		},
+		{
+			"key": "pipe-on-status",
+			"name": "Allow piping on forms this status or less",
+			"type": "dropdown",
+			"choices": [
+				{
+					"value": 0,
+					"name": "Incomplete"
+				},
+				{
+					"value": 1,
+					"name": "Unverified"
+				},
+				{
+					"value": 2,
+					"name": "Complete"
 				}
 			],
 			"repeatable": false

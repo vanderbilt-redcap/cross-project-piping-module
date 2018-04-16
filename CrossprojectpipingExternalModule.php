@@ -10,10 +10,14 @@ require_once dirname(__FILE__) . '/init_hook_functions.php';
 class CrossprojectpipingExternalModule extends AbstractExternalModule
 {
 	public $pipingMode;
+	public $pipeOnStatus;
+	public $modSettings;
 
 	function __construct() {
 		parent::__construct();
-		$this->pipingMode = 0;
+		if(defined("PROJECT_ID")) {
+			$this->modSettings = $this->getPipingSettings(PROJECT_ID);
+		}
 	}
 
 	function redcap_data_entry_form_top($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
@@ -22,17 +26,6 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 	function redcap_survey_page_top($project_id, $record, $instrument, $event_id, $group_id, $survey_hash, $response_id, $repeat_instance) {
 		$this->processRecord($project_id, $record, $instrument, $event_id, $repeat_instance);
-	}
-
-	/**
-	 * Nicely formatted var_export for checking output .
-	 */
-	function pDump($value, $die = false) {
-		highlight_string("<?php\n\$data =\n" . var_export($value, true) . ";\n?>");
-		echo '<hr>';
-		if($die) {
-			die();
-		}
 	}
 
 	/**
@@ -89,6 +82,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		$rawSettings = ExternalModules::getProjectSettingsAsArray([$this->PREFIX], $project_id);
 		$subSettingCount = count($rawSettings[$keys[0]['key']]['value']);
 		$this->pipingMode = (isset($rawSettings['piping-mode']['value'])) ? $rawSettings['piping-mode']['value'] : 0 ;
+		$this->pipeOnStatus = (isset($rawSettings['pipe-on-status']['value'])) ? $rawSettings['pipe-on-status']['value'] : 0 ;
 		for($i=0; $i<$subSettingCount; $i++){
 			$subSetting = [];
 			foreach($keys as $key){
@@ -129,7 +123,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			return;
 		}
 
-		// If this record is NOT currently marked 'Incomplete' do not pipe data
+		// If this instrument's status is currently HIGHER than 'pipe-on-status' config value then DO NOT pipe data
 		$fieldName = db_real_escape_string($instrument).'_complete';
 		$sql = "SELECT * FROM redcap_data WHERE project_id = {$project_id} AND record = '{$record}' AND event_id = {$event_id} AND field_name = '{$fieldName}'";
 		if($repeat_instance >= 2) {
@@ -139,7 +133,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		}
 		$compResults = $this->query($sql);
 		$compData = db_fetch_assoc($compResults);
-		if(!empty($compData) && $compData['value'] >= 1) {
+		if(!empty($compData) && $compData['value'] > $this->pipeOnStatus) {
 			return;
 		}
 
@@ -147,8 +141,6 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		$term = '@PROJECTPIPING';
 		$matchTerm = '@FIELDMATCH';
 		$matchSourceTerm = '@FIELDMATCHSOURCE';
-
-		$module_data = $this->getPipingSettings($project_id);
 
 		$settingTerm = ExternalModules::getProjectSetting("vanderbilt_crossplatformpiping", $project_id, "term");
 		if ($settingTerm != "") {
@@ -183,10 +175,10 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 		// If we have module settings lets overwrite $hook_functions with our module settings data
 		$useConfigSettings = false;
-		if(!empty($module_data) && !empty($module_data[0]['project-id'])) {
+		if(!empty($this->modSettings) && !empty($this->modSettings[0]['project-id'])) {
 			$useConfigSettings = true;
 			$hook_functions = array();
-			foreach($module_data AS $mdk => $mdv) {
+			foreach($this->modSettings AS $mdk => $mdv) {
 				$projId = $mdv['project-id'];
 				$fieldMatch = $mdv['field-match'];
 				$fieldMatchSource = $mdv['field-match-source'];
