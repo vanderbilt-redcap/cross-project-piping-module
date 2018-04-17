@@ -12,9 +12,11 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 	public $pipingMode;
 	public $pipeOnStatus;
 	public $modSettings;
+	public $hideButton;
 
 	function __construct() {
 		parent::__construct();
+		$this->hideButton = false;
 		if(defined("PROJECT_ID")) {
 			$this->modSettings = $this->getPipingSettings(PROJECT_ID);
 		}
@@ -25,6 +27,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 	}
 
 	function redcap_survey_page_top($project_id, $record, $instrument, $event_id, $group_id, $survey_hash, $response_id, $repeat_instance) {
+		$this->hideButton = true;
 		$this->processRecord($project_id, $record, $instrument, $event_id, $repeat_instance);
 	}
 
@@ -268,7 +271,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 				<?php endif; ?>
 
 				window.onload = function() {
-					<?php if($this->pipingMode == 1): ?>
+					<?php if($this->pipingMode == 1 && !$this->hideButton): ?>
 						$('#form table#questiontable>tbody').prepend('<tr style="border-top: 1px solid #DDDDDD;"><td style="text-align: center; padding: 6px;" colspan="2"><button id="ccpPipeData">Initiate Data Piping</button></td></tr>');
 						$('#ccpPipeData').click(function(evt){
 							evt.preventDefault();
