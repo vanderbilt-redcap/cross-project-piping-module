@@ -30,6 +30,10 @@
 	"links": {
 	},
 
+	"no-auth-pages": [
+		"updateTestMetadata"
+	],
+
 	"system-settings": [
 		
 	],

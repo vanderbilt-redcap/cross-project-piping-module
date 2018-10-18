@@ -75,44 +75,46 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 	}
 
 	private function setupTestProjects() {
+		$url = $this->getUrl("updateTestMetadata.php",true);
 
-		## Get or create the parent project
-		$parentProject = $this->createOrWipeTestProject("test_project_1","Cross Project Piping Test - Parent Project");
-		$pipingProject = $this->createOrWipeTestProject('test_project_2',"Cross Project Piping Test - Receiving Project");
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_VERBOSE, 0);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+		curl_setopt($ch, CURLOPT_AUTOREFERER, true);
+		curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
+		curl_setopt($ch, CURLOPT_FRESH_CONNECT, 1);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, array(
+				'projectType' => "parent"
+		));
+		$output = curl_exec($ch);
+		curl_close($ch);
 
-		$this->setTestMetadataAndData($parentProject,
-		[
-				["record_id_input","test_piping_instrument","","text","Record ID"],
-				["pipe_field_1","test_piping_instrument","","text","Test Piping 1"],
-				["pipe_field_2","test_piping_instrument","","radio","Test Piping 2","0, Piped Value Null|1, Test Success|2, What?"],
-				["pipe_field_3","test_piping_instrument","","text","Test Piping 3","","MM-DD-YYYY","date_mdy"],
-				["pipe_field_4","test_piping_instrument","","calc","Test Piping 4",'rounddown(datediff("01-01-1970",[pipe_field_3],"y","mdy",true))']
-		],
-		[
-			[
-				"record_id_input" => "1",
-				"pipe_field_1" => "Pipe Successful",
-				"pipe_field_2" => "1",
-				"pipe_field_3" => "2018-01-01"
-			]
-		]);
+		if($output != "success") {
+			error_log("Cross Project Piping: Error Enabling Parent:<br />\n".$output);
+		}
 
-		$this->setTestMetadataAndData($pipingProject,
-		[
-				["record_id_output","test_piping_instrument","","text","Record ID"],
-				["pipe_field_1","test_piping_instrument","","text","Test Piping 1"],
-				["pipe_field_2","test_piping_instrument","","radio","Test Piping 2","0, Piped Value Null|1, Test Success|2, What?"],
-				["pipe_field_3_2","test_piping_instrument","","text","Test Piping 3","","MM-DD-YYYY","date_mdy"],
-				["pipe_field_4_2","test_piping_instrument","","text","Test Piping 4"]
-		],
-		[
-			[
-				"record_id_output" => "1"
-			]
-		]);
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_VERBOSE, 0);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+		curl_setopt($ch, CURLOPT_AUTOREFERER, true);
+		curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
+		curl_setopt($ch, CURLOPT_FRESH_CONNECT, 1);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, array(
+				'projectType' => "output"
+		));
+		$output = curl_exec($ch);
+		curl_close($ch);
+
+		if($output != "success") {
+			error_log("Cross Project Piping: Error Enabling Output:<br />\n".$output);
+		}
 	}
 
-	private function createOrWipeTestProject($settingName,$projectName) {
+	function createOrWipeTestProject($settingName,$projectName) {
 		$projectId = $this->getSystemSetting($settingName);
 
 		if($projectId == "") {
@@ -164,40 +166,45 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		return $projectId;
 	}
 
-	private function setTestMetadataAndData($projectId,$metadata,$data) {
-		global $Proj,$AllProjObjects;
+	function setTestMetadataAndData($projectId,$metadata,$data) {
+		if($projectId != "" && !defined("PROJECT_ID")) {
+			global $Proj,$AllProjObjects;
 
-		$this->query("BEGIN");
-		$Proj = new \Project($projectId,false);
+			define("PROJECT_ID",$projectId);
 
-		## Update Data Dictionary
-		$metaDataResults = \MetaData::saveMetadataFlat($metadata);
+			$this->query("BEGIN");
+			$Proj = new \Project($projectId,false);
 
-		## If errors on setting metadata
-		if(count($metaDataResults[1]) > 0) {
-			$this->query("ROLLBACK");
-			return;
-		}
+			## Update Data Dictionary
+			$metaDataResults = \MetaData::saveMetadataFlat($metadata);
 
-		## Unset from AllProjObjects to force lookup of newly set metadata
-		## Must be done before saving data or saveData will generate errors
-		unset($AllProjObjects[$projectId]);
-
-		## Save records for testing
-		$eventId = $this->getFirstEventId($projectId);
-
-		foreach($data as $recordData) {
-			$result = $this->saveData($projectId,"1",$eventId,$recordData);
-
-			## If save data successful
-			if(count($result['errors']) > 0) {
+			## If errors on setting metadata
+			if(count($metaDataResults[1]) > 0) {
+				error_log("Cross Project Piping: Error Setting Metadata ".var_export($metaDataResults[1],true));
 				$this->query("ROLLBACK");
-				error_log("Cross Project Piping: Error Enabling: ".var_export($result['errors'],true));
 				return;
 			}
-		}
 
-		$this->query("COMMIT");
+			## Unset from AllProjObjects to force lookup of newly set metadata
+			## Must be done before saving data or saveData will generate errors
+			unset($AllProjObjects[$projectId]);
+
+			## Save records for testing
+			$eventId = $this->getFirstEventId($projectId);
+
+			foreach($data as $recordData) {
+				$result = $this->saveData($projectId,"1",$eventId,$recordData);
+
+				## If save data successful
+				if(count($result['errors']) > 0) {
+					$this->query("ROLLBACK");
+					error_log("Cross Project Piping: Error Enabling: ".var_export($result['errors'],true));
+					return;
+				}
+			}
+
+			$this->query("COMMIT");
+		}
 	}
 
 	/**
