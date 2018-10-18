@@ -21,7 +21,10 @@
 	"permissions": [
 		"redcap_data_entry_form_top",
 		"redcap_survey_page_top",
-		"select_data"
+		"select_data",
+		"redcap_module_system_enable",
+		"redcap_module_system_change_version",
+		"redcap_module_save_configuration"
 	],
 
 	"links": {

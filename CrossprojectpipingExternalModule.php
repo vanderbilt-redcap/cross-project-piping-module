@@ -5,7 +5,6 @@ use ExternalModules\AbstractExternalModule;
 use ExternalModules\ExternalModules;
 
 require_once dirname(__FILE__) . '/hooks_common.php';
-require_once dirname(__FILE__) . '/init_hook_functions.php';
 
 class CrossprojectpipingExternalModule extends AbstractExternalModule
 {
@@ -29,6 +28,176 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 	function redcap_survey_page_top($project_id, $record, $instrument, $event_id, $group_id, $survey_hash, $response_id, $repeat_instance) {
 		$this->hideButton = true;
 		$this->processRecord($project_id, $record, $instrument, $event_id, $repeat_instance);
+	}
+
+	function redcap_module_save_configuration($project_id) {
+		## Don't allow users to specify project/field combinations that they don't have read access to
+		## Unless that project/field combination has already been accepted by someone with read access
+		$pipedProjects = $this->getProjectSetting('project-id',$project_id);
+
+		$destinationFields = $this->getProjectSetting('data-destination-field',$project_id);
+		$sourceFields = $this->getProjectSetting('data-source-field',$project_id);
+
+		error_log("Cross Project Piping: Piped<br /><br />\n\n".var_export($pipedProjects,true));
+		error_log("Cross Project Piping: Destination<br /><br />\n\n".var_export($destinationFields,true));
+		error_log("Cross Project Piping: Source<br /><br />\n\n".var_export($sourceFields,true));
+
+		foreach($pipedProjects as $projectKey => $thisProject) {
+			## List of fields for this project that are already confirmed
+			$confirmedFields = $this->getProjectSetting('confirmed-fields-'.$thisProject,$project_id);
+
+
+			foreach($destinationFields[$projectKey] as $fieldKey => $fieldName) {
+				if($sourceFields[$projectKey][$fieldKey] != "") {
+					$fieldName = $sourceFields[$projectKey][$fieldKey];
+				}
+			}
+
+			$userRights = \UserRights::getPrivileges($thisProject,USERID);
+			$isSuperUser = \User::isSuperUser(USERID);
+
+			$userRights = $userRights[$thisProject][USERID];
+
+			error_log("Cross Project Piping: User Rights : $isSuperUser<br /><br />\n\n".var_export($userRights,true));
+			if($isSuperUser) {
+
+			}
+		}
+	}
+
+	function redcap_module_system_change_version($version, $old_version) {
+		$this->setupTestProjects();
+	}
+
+	function redcap_module_system_enable($version) {
+		error_log("Enabling Cross Project Piping");
+		$this->setupTestProjects();
+	}
+
+	private function setupTestProjects() {
+
+		## Get or create the parent project
+		$parentProject = $this->createOrWipeTestProject("test_project_1","Cross Project Piping Test - Parent Project");
+		$pipingProject = $this->createOrWipeTestProject('test_project_2',"Cross Project Piping Test - Receiving Project");
+
+		$this->setTestMetadataAndData($parentProject,
+		[
+				["record_id_input","test_piping_instrument","","text","Record ID"],
+				["pipe_field_1","test_piping_instrument","","text","Test Piping 1"],
+				["pipe_field_2","test_piping_instrument","","radio","Test Piping 2","0, Piped Value Null|1, Test Success|2, What?"],
+				["pipe_field_3","test_piping_instrument","","text","Test Piping 3","","MM-DD-YYYY","date_mdy"],
+				["pipe_field_4","test_piping_instrument","","calc","Test Piping 4",'rounddown(datediff("01-01-1970",[pipe_field_3],"y","mdy",true))']
+		],
+		[
+			[
+				"record_id_input" => "1",
+				"pipe_field_1" => "Pipe Successful",
+				"pipe_field_2" => "1",
+				"pipe_field_3" => "2018-01-01"
+			]
+		]);
+
+		$this->setTestMetadataAndData($pipingProject,
+		[
+				["record_id_output","test_piping_instrument","","text","Record ID"],
+				["pipe_field_1","test_piping_instrument","","text","Test Piping 1"],
+				["pipe_field_2","test_piping_instrument","","radio","Test Piping 2","0, Piped Value Null|1, Test Success|2, What?"],
+				["pipe_field_3_2","test_piping_instrument","","text","Test Piping 3","","MM-DD-YYYY","date_mdy"],
+				["pipe_field_4_2","test_piping_instrument","","text","Test Piping 4"]
+		],
+		[
+			[
+				"record_id_output" => "1"
+			]
+		]);
+	}
+
+	private function createOrWipeTestProject($settingName,$projectName) {
+		$projectId = $this->getSystemSetting($settingName);
+
+		if($projectId == "") {
+			## Create testing project using API
+			$apiToken = \Project::apiCreate(USERID,[
+					"project_title" => $projectName,
+					"record_autonumbering_enabled" => 1,
+					"purpose" => 1,
+					"purpose_other" => "Module Testing"
+			]);
+
+			if(!$apiToken) {
+				error_log("Cross Project Piping: Error Generating Parent Project Token");
+				return "";
+			}
+
+			$sql = "SELECT u.project_id
+					FROM redcap_user_rights u
+					WHERE u.api_token = '".db_escape($apiToken)."'";
+
+			$q = db_query($sql);
+			$projectId = db_result($q,0,'project_id');
+
+			if($e = db_error()) {
+				error_log("Cross Project Piping: Error Enabling: $sql <br /><br />\n\n".var_export($e,true));
+			}
+
+			## Error occurred if this is empty
+			if(empty($projectId)) {
+				return "";
+			}
+			$this->setSystemSetting($settingName,$projectId);
+		}
+		else {
+			## Wipe data so it can be re-created from scratch
+			$sql = "DELETE FROM redcap_data
+					WHERE project_id = '".db_escape($projectId)."'";
+
+			$q = db_query($sql);
+
+			if($e = db_error()) {
+				error_log("Cross Project Piping: Error Enabling: $sql <br /><br />\n\n".var_export($e,true));
+				return "";
+			}
+
+			\REDCap::logEvent("Data deleted from test project when enabling new version","Data Deleted",$sql,null,null,$projectId);
+		}
+
+		return $projectId;
+	}
+
+	private function setTestMetadataAndData($projectId,$metadata,$data) {
+		global $Proj,$AllProjObjects;
+
+		$this->query("BEGIN");
+		$Proj = new \Project($projectId,false);
+
+		## Update Data Dictionary
+		$metaDataResults = \MetaData::saveMetadataFlat($metadata);
+
+		## If errors on setting metadata
+		if(count($metaDataResults[1]) > 0) {
+			$this->query("ROLLBACK");
+			return;
+		}
+
+		## Unset from AllProjObjects to force lookup of newly set metadata
+		## Must be done before saving data or saveData will generate errors
+		unset($AllProjObjects[$projectId]);
+
+		## Save records for testing
+		$eventId = $this->getFirstEventId($projectId);
+
+		foreach($data as $recordData) {
+			$result = $this->saveData($projectId,"1",$eventId,$recordData);
+
+			## If save data successful
+			if(count($result['errors']) > 0) {
+				$this->query("ROLLBACK");
+				error_log("Cross Project Piping: Error Enabling: ".var_export($result['errors'],true));
+				return;
+			}
+		}
+
+		$this->query("COMMIT");
 	}
 
 	/**
@@ -144,37 +313,6 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		$term = '@PROJECTPIPING';
 		$matchTerm = '@FIELDMATCH';
 		$matchSourceTerm = '@FIELDMATCHSOURCE';
-
-		$settingTerm = ExternalModules::getProjectSetting("vanderbilt_crossplatformpiping", $project_id, "term");
-		if ($settingTerm != "") {
-			if ($settingTerm[0] == "@") {
-				$term = $settingTerm;
-			} else {
-				$term = "@".$settingTerm;
-			}
-		}
-
-		$settingMatchTerm = ExternalModules::getProjectSetting("vanderbilt_crossplatformpiping", $project_id, "match-term");
-
-		hook_log("Starting $term and $matchTerm for project $project_id", "DEBUG");
-		
-		///////////////////////////////
-		//	Enable hook_functions and hook_fields for this plugin (if not already done)
-		if (!isset($hook_functions)) {
-			$file = dirname(__FILE__).'/init_hook_functions.php';
-			if (file_exists($file)) {
-				include_once $file;
-
-				$hook_functions = getHookFunctions($project_id);
-
-				// Verify it has been loaded
-				if (!isset($hook_functions)) { hook_log("ERROR: Unable to load required init_hook_functions."); return; }
-			} else {
-				hook_log ("ERROR: In Hooks - unable to include required file $file while in " . __FILE__);
-			}
-		}
-		
-		//////////////////////////////
 
 		// If we have module settings lets overwrite $hook_functions with our module settings data
 		$useConfigSettings = false;
