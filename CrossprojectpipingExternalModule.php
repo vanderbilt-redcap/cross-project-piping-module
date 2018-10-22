@@ -75,42 +75,49 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 	}
 
 	private function setupTestProjects() {
+		$parentProject = $this->createOrWipeTestProject("test_project_1","Cross Project Piping Test - Parent Project");
+		$pipingProject = $this->createOrWipeTestProject('test_project_2',"Cross Project Piping Test - Receiving Project");
+
 		$url = $this->getUrl("updateTestMetadata.php",true);
 
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $url);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($ch, CURLOPT_VERBOSE, 0);
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-		curl_setopt($ch, CURLOPT_AUTOREFERER, true);
-		curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
-		curl_setopt($ch, CURLOPT_FRESH_CONNECT, 1);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, array(
-				'projectType' => "parent"
-		));
-		$output = curl_exec($ch);
-		curl_close($ch);
+		if($parentProject) {
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, $url);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($ch, CURLOPT_VERBOSE, 0);
+			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+			curl_setopt($ch, CURLOPT_AUTOREFERER, true);
+			curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
+			curl_setopt($ch, CURLOPT_FRESH_CONNECT, 1);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, array(
+					'projectType' => "parent"
+			));
+			$output = curl_exec($ch);
+			curl_close($ch);
 
-		if($output != "success") {
-			error_log("Cross Project Piping: Error Enabling Parent:<br />\n".$output);
+			if($output != "success") {
+				error_log("Cross Project Piping: Error Enabling Parent:<br />\n".$output);
+			}
 		}
 
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $url);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($ch, CURLOPT_VERBOSE, 0);
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-		curl_setopt($ch, CURLOPT_AUTOREFERER, true);
-		curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
-		curl_setopt($ch, CURLOPT_FRESH_CONNECT, 1);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, array(
-				'projectType' => "output"
-		));
-		$output = curl_exec($ch);
-		curl_close($ch);
+		if($parentProject && $pipingProject) {
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, $url);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($ch, CURLOPT_VERBOSE, 0);
+			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+			curl_setopt($ch, CURLOPT_AUTOREFERER, true);
+			curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
+			curl_setopt($ch, CURLOPT_FRESH_CONNECT, 1);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, array(
+					'projectType' => "output"
+			));
+			$output = curl_exec($ch);
+			curl_close($ch);
 
-		if($output != "success") {
-			error_log("Cross Project Piping: Error Enabling Output:<br />\n".$output);
+			if($output != "success") {
+				error_log("Cross Project Piping: Error Enabling Output:<br />\n".$output);
+			}
 		}
 	}
 
