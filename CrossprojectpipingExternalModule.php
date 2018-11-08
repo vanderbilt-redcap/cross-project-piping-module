@@ -142,7 +142,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 					FROM redcap_user_rights u
 					WHERE u.api_token = '".db_escape($apiToken)."'";
 
-			$q = db_query($sql);
+			$q = $this->query($sql);
 			$projectId = db_result($q,0,'project_id');
 
 			if($e = db_error()) {
@@ -160,7 +160,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			$sql = "DELETE FROM redcap_data
 					WHERE project_id = '".db_escape($projectId)."'";
 
-			$q = db_query($sql);
+			$q = $this->query($sql);
 
 			if($e = db_error()) {
 				error_log("Cross Project Piping: Error Enabling: $sql <br /><br />\n\n".var_export($e,true));
@@ -357,6 +357,8 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		$match = $hook_functions[$matchTerm];
 		$matchSource = $hook_functions[$matchSourceTerm];
 		$choicesForFields = array();
+		$cachedDataDictionaries = array();
+
 		foreach ($startup_vars as $field => $params) {
 			$nodes = preg_split("/\]\[/", $params['params']);
 			for ($i=0; $i < count($nodes); $i++) {
@@ -364,7 +366,13 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 				$nodes[$i] = preg_replace("/\]$/", "", $nodes[$i]);
 			}
 			$otherpid = $nodes[0];
-			$metadata = \REDCap::getDataDictionary($otherpid, 'array');
+
+			## Only lookup the DD once per project
+			if(!array_key_exists($otherpid,$cachedDataDictionaries)) {
+				$cachedDataDictionaries[$otherpid] = \REDCap::getDataDictionary($otherpid, 'array');
+			}
+			$metadata = $cachedDataDictionaries[$otherpid];
+
 			if (count($nodes) == 2) {
 				$fieldName = $nodes[1];
 			} else {
