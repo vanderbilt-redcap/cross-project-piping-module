@@ -430,7 +430,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 					initiateLoadingOverlay();
 				<?php endif; ?>
 
-				window.onload = function() {
+				$(document).ready(function() {
 					<?php if($this->pipingMode == 1 && !$this->hideButton): ?>
 						$('#form table#questiontable>tbody').prepend('<tr style="border-top: 1px solid #DDDDDD;"><td style="text-align: center; padding: 6px;" colspan="2"><button id="ccpPipeData">Initiate Data Piping</button></td></tr>');
 						$('#ccpPipeData').click(function(evt){
@@ -440,7 +440,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 					<?php else: ?>
 						runCrossProjectPiping();
 					<?php endif; ?>
-				}
+				});
 
 				function initiateLoadingOverlay() {
 					// Create a loading overlay to indicate piping in process
@@ -449,6 +449,11 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 					jsCppAjaxLoader.setAttribute("style", "overflow: hidden; text-align: center; position: absolute; top: 0; right: 0; bottom: 0; left: 0; background-color: rgba(255, 255, 255, 0.7); z-index: 9999;");
 					jsCppAjaxLoader.innerHTML = '<!-- x -->';
 					var centerEl = document.getElementById('center');
+					// On REDCap v8.4.2, centerEl was not being set on surveys
+					// This fixes that and prevents piping errors on surveys
+					if(typeof centerEl == "undefined" || centerEl === null) {
+						centerEl = document.getElementById('container');
+					}
 					centerEl.insertBefore(jsCppAjaxLoader, centerEl.firstChild);
 					// END loading overlay
 				}
