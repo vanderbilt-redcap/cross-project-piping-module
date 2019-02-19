@@ -672,4 +672,12 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			</script>
 		<?php
 	}
+
+	function validateSettings(){
+		if(!SUPER_USER){
+			return "Only REDCap system administrators are allowed to modify the settings of this module.";
+		}
+
+		return parent::validateSettings();
+	}
 }

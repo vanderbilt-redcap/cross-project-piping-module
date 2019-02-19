@@ -40,6 +40,10 @@
 	
 	"project-settings": [
 		{
+			"type": "descriptive",
+			"name": "<br><h6>Only REDCap system administrators are allowed to modify the settings of this module.</h6><br>"
+		},
+		{
 			"key": "pipe-projects",
 			"name": "Pipe Project",
 			"required": false,
