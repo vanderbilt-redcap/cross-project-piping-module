@@ -31,6 +31,12 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 	}
 
 	function redcap_module_save_configuration($project_id) {
+		## This function was started to prevent unauthorized users from pulling data from other projects
+		## Currently, this is unneeded as only superusers can configure the module
+		## At some point, it would be nice to allow non-superusers to configure
+		## But further testing and development is needed
+		return;
+
 		## Don't allow users to specify project/field combinations that they don't have read access to
 		## Unless that project/field combination has already been accepted by someone with read access
 		$pipedProjects = $this->getProjectSetting('project-id',$project_id);
@@ -66,10 +72,17 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 	}
 
 	function redcap_module_system_change_version($version, $old_version) {
+		## This function was being tested to set up a test project on module version enabling
+		## It's not been tested thoroughly enough to leave in
+		return;
 		$this->setupTestProjects();
 	}
 
 	function redcap_module_system_enable($version) {
+		## This function was being tested to set up a test project on module version enabling
+		## It's not been tested thoroughly enough to leave in
+		return;
+
 		error_log("Enabling Cross Project Piping");
 		$this->setupTestProjects();
 	}
