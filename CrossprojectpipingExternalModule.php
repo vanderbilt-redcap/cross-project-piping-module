@@ -686,11 +686,38 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		<?php
 	}
 
-	function validateSettings(){
+	function validateSettings($settings){
 		if(!SUPER_USER){
-			return "Only REDCap system administrators are allowed to modify the settings of this module.";
+			$projectIds = $settings['project-id'];
+
+			$allProjectRights = $this->getRights($projectIds);
+
+			foreach($allProjectRights as $singleProjectRights){
+				if($singleProjectRights['design'] !== '1'){
+					return "You must have design rights for every source project in order to save this module's settings.";
+				}
+			}
 		}
 
 		return parent::validateSettings();
+	}
+
+	// The following method can be replaced by $user->getRights() in framework version 2.
+	private function getRights($project_ids){
+		if($project_ids === null){
+			$project_ids = $this->framework->requireProjectId();
+		}
+
+		if(!is_array($project_ids)){
+			$project_ids = [$project_ids];
+		}
+
+		$rightsByPid = [];
+		foreach($project_ids as $project_id){
+			$rights = \UserRights::getPrivileges($project_id, USERID);
+			$rightsByPid[$project_id] = $rights[$project_id][USERID];
+		}
+
+		return $rightsByPid;
 	}
 }

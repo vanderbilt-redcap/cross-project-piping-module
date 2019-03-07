@@ -42,7 +42,7 @@
 		{
 			"key": "admin-only-warning",
 			"type": "descriptive",
-			"name": "<br><h6>Only REDCap system administrators are allowed to modify the settings of this module.</h6><br>"
+			"name": "<br><h6>Only users with design rights on all source projects are allowed to configure this module.</h6><br>"
 		},
 		{
 			"key": "pipe-projects",
