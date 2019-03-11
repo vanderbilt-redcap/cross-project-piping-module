@@ -699,7 +699,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			}
 		}
 
-		return parent::validateSettings();
+		return parent::validateSettings($settings);
 	}
 
 	// The following method can be replaced by $user->getRights() in framework version 2.
