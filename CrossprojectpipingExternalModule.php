@@ -523,6 +523,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 							var match = <?= json_encode($match) ?>;
 							var matchSource = <?= json_encode($matchSource) ?>;
+							var matchInstance = <?= json_encode($repeat_instance) ?>;
 
 							var matchSourceParam = null
 							if(matchSource && matchSource[field]){
@@ -540,7 +541,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 								cppAjaxConnections++;
 								var ajaxCountLimit = 0;
 								// console.log('++cppAjaxConnections = '+cppAjaxConnections);
-								$.post(url, { thisrecord: '<?= $_GET['id'] ?>', thispid: <?= $_GET['pid'] ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
+								$.post(url, { thisrecord: '<?= $_GET['id'] ?>', thispid: <?= $_GET['pid'] ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices), thisinstance: matchInstance }, function(data) {
 									if(data.length && typeof(data) == 'string' && data.indexOf('multiple browser tabs of the same REDCap page. If that is not the case') >= 0) {
 										if(ajaxCountLimit >= 1000) {
 											return;
