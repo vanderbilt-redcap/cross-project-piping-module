@@ -17,6 +17,8 @@
 			"institution": "Vanderbilt University Medical Center"
 		}
 	],
+
+	"framework-version": 2,
 	
 	"permissions": [
 		"redcap_data_entry_form_top",
