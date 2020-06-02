@@ -687,14 +687,20 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 	}
 
 	function validateSettings($settings){
+		error_reporting(E_ALL);
 		if(!SUPER_USER){
+			if(defined('USERID')) {
+				$userID = USERID;
+			} else {
+				return "No User ID Defined!";
+			}
 			$projectIds = $settings['project-id'];
-
-			$allProjectRights = $this->getRights($projectIds);
-
-			foreach($allProjectRights as $singleProjectRights){
-				if($singleProjectRights['design'] !== '1'){
-					return "You must have design rights for every source project in order to save this module's settings.";
+			foreach($projectIds AS $proj_id) {
+				if(!empty($proj_id) && $proj_id != 'null') {
+					$rights = \UserRights::getPrivileges($proj_id, $userID);
+					if(empty($rights) || $rights[$proj_id][$userID]['design'] != 1){
+						return "You must have design rights for every source project in order to save this module's settings.";
+					}
 				}
 			}
 		}
@@ -703,7 +709,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 	}
 
 	// The following method can be replaced by $user->getRights() in framework version 2.
-	private function getRights($project_ids){
+	/*private function getRights($project_ids){
 		if($project_ids === null){
 			$project_ids = $this->framework->requireProjectId();
 		}
@@ -719,5 +725,5 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		}
 
 		return $rightsByPid;
-	}
+	}*/
 }
