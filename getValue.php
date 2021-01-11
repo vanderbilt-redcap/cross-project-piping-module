@@ -4,8 +4,8 @@
 	use ExternalModules\AbstractExternalModule;
 	use ExternalModules\ExternalModules;
 	
-	$module->llog("\$_GET: " . print_r($_GET, true) . "\n");
-	$module->llog("\$_POST: " . print_r($_POST, true) . "\n");
+	ini_set('display_errors', 0);
+	error_reporting(0);
 	
 	require_once APP_PATH_DOCROOT.'Classes/LogicTester.php';
 
@@ -19,7 +19,7 @@
 		$choices_obj = new \stdClass();;
 	}
 	// $active_forms = $module->getProjectSetting('active-forms');
-	$instance_i = intval($_GET['instance']);
+	$instance_i = intval($_POST['thisinstance']);
 	
 	$thisjson = \REDCap::getData($_POST['thispid'], 'json', array($_POST['thisrecord']), array($_POST['thismatch'])); 
 	$thismatch = trim($_POST['thismatch']);
@@ -101,12 +101,8 @@
 		global $choices_obj;
 		global $module;
 		
-		// $module->llog("exitInstanceValue instance argument: " . print_r($instance, true));
-		$module->llog("exitInstanceValue logicItems: " . print_r($logicItems, true));
-		
 		$eid = $sourceProject->firstEventId;
 		foreach ($logicItems as $field => $logicItem) {
-			$module->llog("field $field, logicItem $logicItem");
 			if (\LogicTester::isValid($logicItem)) {
 				$result = \LogicTester::apply($logicItem, $instance, $sourceProject, true);
 				
@@ -126,13 +122,10 @@
 					} else {
 						$returnVal = $result;
 					}
-					$module->llog('exit a: ' . print_r($returnVal, true));
 					exit($returnVal);
 				// } else if(!empty($instance[$eid][substr($logicItem, 1, -1)]) && is_array($instance[$eid][substr($logicItem, 1, -1)]) && !empty(reset($instance[$eid][substr($logicItem, 1, -1)]))) {
 				} else if(!empty($inst_field) && is_array($inst_field) && (reset($inst_field) == '0' or reset($inst_field) == '1')) {
 					header('Content-Type: application/json');
-					$module->llog('exit b: ' . print_r(json_encode($instance[$eid][substr($logicItem, 1, -1)]), true));
-					$module->llog("exitInstanceValue instance argument: " . print_r($instance, true));
 					exit(json_encode($instance[$eid][substr($logicItem, 1, -1)]));
 				}
 			}
@@ -140,26 +133,18 @@
 	}
 	
 	foreach ($data as $record => $recData) {
-		// $module->llog("calling exitInstanceValue on recData: " . print_r($recData, true));
 		exitInstanceValue($recData);
 		
 		// if we didn't exit a value, didn't find one, check repeating instances
 		if ($instance_i <= 0) {
-			$module->llog('exit c: ""');
 			exit("");
 		}
-		$module->llog('depth level a');
 		foreach($recData['repeat_instances'] as $eid => $instruments) {
-			$module->llog('depth level b');
 			foreach ($instruments as $instrument_name => $instances) {
-				$module->llog('depth level c');
 				// ensure instrument is in active_forms setting
 				$instance = $instances[$instance_i];
-				// $module->llog("instances[instance_i: $instance_i]: " . print_r($instance, true));
 				if (!empty($instance)) {
-					$module->llog('depth level d');
 					// shim instance so it looks like regular, non-repeating instrument data
-					// $module->llog("calling exitInstanceValue on: " . print_r([$eid => $instance], true));
 					exitInstanceValue([$eid => $instance]);
 				}
 			}
@@ -167,6 +152,5 @@
 	}
 	
 	// send empty value response
-	$module->llog('exit d: ""');
 	exit("");
 ?>
