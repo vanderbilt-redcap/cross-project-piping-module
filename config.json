@@ -147,6 +147,11 @@
 				}
 			],
 			"repeatable": false
+		},
+		{
+			"key": "allow-piping-on-survey-pages",
+			"name": "Allow piping on survey pages",
+			"type": "checkbox"
 		}
 	]
 }
