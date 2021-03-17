@@ -26,10 +26,8 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 	}
 
 	function redcap_survey_page_top($project_id, $record, $instrument, $event_id, $group_id, $survey_hash, $response_id, $repeat_instance) {
-		if ($this->getProjectSetting('allow-piping-on-survey-pages')) {
-			$this->hideButton = true;
-			$this->processRecord($project_id, $record, $instrument, $event_id, $repeat_instance);
-		}
+		$this->hideButton = true;
+		$this->processRecord($project_id, $record, $instrument, $event_id, $repeat_instance);
 	}
 
 	function redcap_module_save_configuration($project_id) {
