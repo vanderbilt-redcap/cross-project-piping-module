@@ -19,26 +19,8 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		if(defined("PROJECT_ID")) {
 			$this->modSettings = $this->getPipingSettings(PROJECT_ID);
 		}
-		if (file_exists($this->getModulePath() . 'able_test.php')) {
-			$this->local_env = true;
-		}
 	}
-	
-	public function llog($text) {
-		if (!$this->local_env)
-			return;
-		// echo "<pre>$text\n</pre>";
-		
-		$this->log_ran = true;
-		
-		if ($this->log_ran) {
-			file_put_contents("C:/vumc/log.txt", "$text\n", FILE_APPEND);
-		} else {
-			file_put_contents("C:/vumc/log.txt", date('c') . "\n" . "starting CPP log:\n$text\n");
-			$this->log_ran = true;
-		}
-	}
-	
+
 	function redcap_data_entry_form_top($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
 		$this->processRecord($project_id, $record, $instrument, $event_id, $repeat_instance);
 	}
