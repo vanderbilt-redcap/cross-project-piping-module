@@ -3,10 +3,7 @@
 
 	"namespace": "Vanderbilt\\CrossprojectpipingExternalModuleRI",
 
-	"description": "Cross-Project Piping pipes from one field in one project into another field in another project. The projects have to be MATCHED on a third field in both projects. Enable this module in the DESTINATION project and select appropriate fields in the configure panel.
-	
-	This branch of the Cross-Project Piping module adds support for repeating instances but may break existing functionality.",
-
+	"description": "Cross-Project Piping pipes from one field in one project into another field in another project. The projects have to be MATCHED on a third field in both projects. Enable this module in the DESTINATION project and select appropriate fields in the configure panel. This branch of the Cross-Project Piping module adds support for repeating instances but may break existing functionality.",
 	"authors": [
 		{
 			"name": "Scott J. Pearson",
