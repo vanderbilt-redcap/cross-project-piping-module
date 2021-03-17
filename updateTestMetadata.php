@@ -1,12 +1,12 @@
 <?php
-namespace Vanderbilt\CrossprojectpipingExternalModule;
+namespace Vanderbilt\CrossprojectpipingExternalModuleRI;
 
 use ExternalModules\AbstractExternalModule;
 use ExternalModules\ExternalModules;
 
 $projectType = $_POST['projectType'];
 
-/** @var $module CrossprojectpipingExternalModule */
+/** @var $module CrossprojectpipingExternalModuleRI */
 if($projectType == "parent") {
 	$parentProject = $module->getSystemSetting('test_project_1');
 
