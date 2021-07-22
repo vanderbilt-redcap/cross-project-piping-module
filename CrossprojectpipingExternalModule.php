@@ -20,7 +20,18 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			$this->modSettings = $this->getPipingSettings(PROJECT_ID);
 		}
 	}
-
+	
+	function redcap_every_page_before_render($project_id) {
+		$user_is_at_record_status_dashboard = $_SERVER['SCRIPT_NAME'] == APP_PATH_WEBROOT . "DataEntry/record_status_dashboard.php";
+		$pipe_all_records_button_configured = $this->getProjectSetting('piping-all-records-button');
+		
+		if ($user_is_at_record_status_dashboard && $pipe_all_records_button_configured) {
+			// add 'Pipe All Records' button to record status dashboard screen (should appear next to the '+Add New Record' button
+			$record_status_dash_js_url = $this->getUrl("js/record_status_dashboard.js");
+			echo "<script type='text/javascript' src='$record_status_dash_js_url'></script>";
+		}
+	}
+	
 	function redcap_data_entry_form_top($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
 		$this->processRecord($project_id, $record, $instrument, $event_id, $repeat_instance);
 	}
@@ -540,6 +551,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 								cppAjaxConnections++;
 								var ajaxCountLimit = 0;
 								// console.log('++cppAjaxConnections = '+cppAjaxConnections);
+								
 								$.post(url, { thisrecord: '<?= $_GET['id'] ?>', thispid: <?= $_GET['pid'] ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
 									if(data.length && typeof(data) == 'string' && data.indexOf('multiple browser tabs of the same REDCap page. If that is not the case') >= 0) {
 										if(ajaxCountLimit >= 1000) {
