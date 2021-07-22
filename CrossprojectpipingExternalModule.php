@@ -720,6 +720,55 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		return parent::validateSettings($settings);
 	}
 
+	function getProjects() {
+		// prepare array that will be returned
+		$projects = [
+			'destination' => [],
+			'source' => [],
+		];
+		
+		$projects['destination']['pid'] = $this->getProjectId();
+		
+		$project_ids = $this->getProjectSetting('project-id');
+		$dest_match_fields = $this->getProjectSetting('field-match');
+		$source_match_fields = $this->getProjectSetting('field-match-source');
+		$dest_fields = $this->getProjectSetting('data-destination-field');
+		$source_fields = $this->getProjectSetting('data-source-field');
+		
+		// fill $projects['source'] array with source project info arrays
+		foreach ($project_ids as $project_index => $pid) {
+			$source_project = [
+				'project_id' => $pid,
+				'source_match_field' => $source_match_fields[$project_index],
+				'dest_match_field' => $dest_match_fields[$project_index],
+				'dest_fields' => $dest_fields[$project_index],
+				'source_fields' => $source_fields[$project_index]
+			];
+			
+			// where source data/match fields are empty, use destination match/data field names
+			if (empty($source_project['source_match_field'])) {
+				$source_project['source_match_field'] = $source_project['dest_match_field'];
+			}
+			foreach ($source_project['source_fields'] as $list_index => $field_name) {
+				if (empty($field_name)) {
+					$source_project['source_fields'][$list_index] = $source_project['dest_fields'][$list_index];
+				}
+			}
+			
+			$projects['source'][] = $source_project;
+		}
+		
+		// for destination project, prepare list of forms to limit piping to
+		// and remember which form statuses are ok to pipe on (incomplete, complete, etc)
+		$active_forms = $this->getProjectSetting('active-forms');
+		if (!empty($active_forms)) {
+			$projects['destination']['active_forms'] = $active_forms;
+		}
+		$projects['destination']['pipe_on_status'] = $this->getProjectSetting('pipe-on-status');
+		
+		return $projects;
+	}
+
 	// The following method can be replaced by $user->getRights() in framework version 2.
 	/*private function getRights($project_ids){
 		if($project_ids === null){
