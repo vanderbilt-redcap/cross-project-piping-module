@@ -27,8 +27,13 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		
 		if ($user_is_at_record_status_dashboard && $pipe_all_records_button_configured) {
 			// add 'Pipe All Records' button to record status dashboard screen (should appear next to the '+Add New Record' button
-			$record_status_dash_js_url = $this->getUrl("js/record_status_dashboard.js");
-			echo "<script type='text/javascript' src='$record_status_dash_js_url'></script>";
+			$pipe_all_records_ajax_url = $this->getUrl('php/pipe_all_data_ajax.php');
+			$css_url = $this->getUrl('css/pipe_all_data_ajax.css');
+			$javascript_file_contents = file_get_contents($this->getModulePath() . 'js/record_status_dashboard.js');
+			$javascript_file_contents = str_replace("AJAX_ENDPOINT", $pipe_all_records_ajax_url, $javascript_file_contents);
+			
+			echo "<script type='text/javascript'>$javascript_file_contents</script>";
+			echo "<link rel='stylesheet' href='$css_url'>";
 		}
 	}
 	
@@ -727,7 +732,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			'source' => [],
 		];
 		
-		$projects['destination']['pid'] = $this->getProjectId();
+		$projects['destination']['project_id'] = $this->getProjectId();
 		
 		$project_ids = $this->getProjectSetting('project-id');
 		$dest_match_fields = $this->getProjectSetting('field-match');
@@ -755,6 +760,15 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 				}
 			}
 			
+			// add event id/name pairs
+			$source_project['events'] = [];
+			$project_obj = new \Project($pid);
+			foreach ($project_obj->events[1]['events'] as $event_id => $event_array) {
+				$source_project['events'][$event_id] = $event_array['descrip'];
+			}
+			unset($project_obj);
+			
+			// store project info array in projects['source'] array
 			$projects['source'][] = $source_project;
 		}
 		
@@ -765,6 +779,12 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			$projects['destination']['active_forms'] = $active_forms;
 		}
 		$projects['destination']['pipe_on_status'] = $this->getProjectSetting('pipe-on-status');
+		
+		// add event id/names to destination project from global Project instance
+		global $Proj;
+		foreach ($Proj->events[1]['events'] as $event_id => $event_array) {
+			$projects['destination']['events'][$event_id] = $event_array['descrip'];
+		}
 		
 		return $projects;
 	}
