@@ -20,7 +20,23 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			$this->modSettings = $this->getPipingSettings(PROJECT_ID);
 		}
 	}
-
+	
+	function redcap_every_page_before_render($project_id) {
+		$user_is_at_record_status_dashboard = $_SERVER['SCRIPT_NAME'] == APP_PATH_WEBROOT . "DataEntry/record_status_dashboard.php";
+		$pipe_all_records_button_configured = $this->getProjectSetting('piping-all-records-button');
+		
+		if ($user_is_at_record_status_dashboard && $pipe_all_records_button_configured) {
+			// add 'Pipe All Records' button to record status dashboard screen (should appear next to the '+Add New Record' button
+			$pipe_all_records_ajax_url = $this->getUrl('php/pipe_all_data_ajax.php');
+			$css_url = $this->getUrl('css/pipe_all_data_ajax.css');
+			$javascript_file_contents = file_get_contents($this->getModulePath() . 'js/record_status_dashboard.js');
+			$javascript_file_contents = str_replace("AJAX_ENDPOINT", $pipe_all_records_ajax_url, $javascript_file_contents);
+			
+			echo "<script type='text/javascript'>$javascript_file_contents</script>";
+			echo "<link rel='stylesheet' href='$css_url'>";
+		}
+	}
+	
 	function redcap_data_entry_form_top($project_id, $record, $instrument, $event_id, $group_id, $repeat_instance) {
 		$this->processRecord($project_id, $record, $instrument, $event_id, $repeat_instance);
 	}
@@ -540,6 +556,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 								cppAjaxConnections++;
 								var ajaxCountLimit = 0;
 								// console.log('++cppAjaxConnections = '+cppAjaxConnections);
+								
 								$.post(url, { thisrecord: '<?= $_GET['id'] ?>', thispid: <?= $_GET['pid'] ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
 									if(data.length && typeof(data) == 'string' && data.indexOf('multiple browser tabs of the same REDCap page. If that is not the case') >= 0) {
 										if(ajaxCountLimit >= 1000) {
@@ -706,6 +723,107 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		}
 
 		return parent::validateSettings($settings);
+	}
+
+	function getProjects() {
+		// prepare array that will be returned
+		$projects = [
+			'destination' => [],
+			'source' => [],
+		];
+		
+		global $Proj;
+		$projects['destination']['project_id'] = $this->getProjectId();
+		
+		$project_ids = $this->getProjectSetting('project-id');
+		$dest_match_fields = $this->getProjectSetting('field-match');
+		$source_match_fields = $this->getProjectSetting('field-match-source');
+		$dest_fields = $this->getProjectSetting('data-destination-field');
+		$source_fields = $this->getProjectSetting('data-source-field');
+		
+		// fill $projects['source'] array with source project info arrays
+		foreach ($project_ids as $project_index => $pid) {
+			$source_project = [
+				'project_id' => $pid,
+				'source_match_field' => $source_match_fields[$project_index],
+				'dest_match_field' => $dest_match_fields[$project_index],
+				'dest_fields' => $dest_fields[$project_index],
+				'source_fields' => $source_fields[$project_index],
+				'dest_forms_by_field_name' => []
+			];
+			
+			// where source data/match fields are empty, use destination match/data field names
+			if (empty($source_project['source_match_field'])) {
+				$source_project['source_match_field'] = $source_project['dest_match_field'];
+			}
+			foreach ($source_project['source_fields'] as $list_index => $field_name) {
+				// set to destination name if no alternate name used for source project
+				$matching_destination_field_name = $source_project['dest_fields'][$list_index];
+				if (empty($field_name)) {
+					$source_project['source_fields'][$list_index] = $matching_destination_field_name;
+				}
+				
+				// add an entry to dest_forms_by_field_name for this source field
+				$actual_field_name = $source_project['source_fields'][$list_index];
+				$source_project['dest_forms_by_field_name'][$actual_field_name] = $Proj->metadata[$matching_destination_field_name]['form_name'];
+			}
+			
+			// add event id/name pairs
+			$source_project['events'] = [];
+			$project_obj = new \Project($pid);
+			foreach ($project_obj->events[1]['events'] as $event_id => $event_array) {
+				$source_project['events'][$event_id] = $event_array['descrip'];
+			}
+			unset($project_obj);
+			
+			// store project info array in projects['source'] array
+			$projects['source'][] = $source_project;
+		}
+		
+		// for destination project, prepare list of forms to limit piping to
+		// and remember which form statuses are ok to pipe on (incomplete, complete, etc)
+		$active_forms = $this->getProjectSetting('active-forms');
+		if (!empty($active_forms)) {
+			$projects['destination']['active_forms'] = $active_forms;
+		}
+		$projects['destination']['pipe_on_status'] = $this->getProjectSetting('pipe-on-status');
+		
+		// add event id/names to destination project from global Project instance ($Proj is the destination/host project)
+		foreach ($Proj->events[1]['events'] as $event_id => $event_array) {
+			$projects['destination']['events'][$event_id] = $event_array['descrip'];
+		}
+		
+		return $projects;
+	}
+
+	function getFormStatusAllRecords($active_forms) {
+		/* for the forms given in the array above, return an array structured like
+		$form_status_all_records = [
+			// record id
+			[1] => [
+				// event id
+				[393] => [
+					"record_id" => 3,
+					"my_form_1" => 0	// designates incomplete (raw value from [my_form_1_complete] of destination project)
+					"my_form_2" => 2	// raw value 'Complete'
+					...
+				],
+				...
+			],
+			...
+		]
+		*/
+		if (empty($active_forms)) {
+			throw new \Exception("Can't get form statuses without providing form names");
+		}
+		
+		$fields = [];
+		foreach($active_forms as $form_name) {
+			$fields[] = $form_name . "_complete";
+		}
+		$data = \REDCap::getData('array', null, $fields);
+		
+		return $data;
 	}
 
 	// The following method can be replaced by $user->getRights() in framework version 2.

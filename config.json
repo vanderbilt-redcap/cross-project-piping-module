@@ -21,6 +21,7 @@
 	"framework-version": 2,
 	
 	"permissions": [
+		"redcap_every_page_before_render",
 		"redcap_data_entry_form_top",
 		"redcap_survey_page_top",
 		"select_data",
@@ -121,6 +122,13 @@
 					"name": "Piping Button at top of Form(s)"
 				}
 			],
+			"repeatable": false
+		},
+		{
+			"key": "piping-all-records-button",
+			"name": "Add a 'Pipe All Records' button to this project's Record Status Dashboard",
+			"required": false,
+			"type": "checkbox",
 			"repeatable": false
 		},
 		{
