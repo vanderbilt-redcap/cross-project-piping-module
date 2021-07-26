@@ -732,6 +732,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			'source' => [],
 		];
 		
+		global $Proj;
 		$projects['destination']['project_id'] = $this->getProjectId();
 		
 		$project_ids = $this->getProjectSetting('project-id');
@@ -747,7 +748,8 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 				'source_match_field' => $source_match_fields[$project_index],
 				'dest_match_field' => $dest_match_fields[$project_index],
 				'dest_fields' => $dest_fields[$project_index],
-				'source_fields' => $source_fields[$project_index]
+				'source_fields' => $source_fields[$project_index],
+				'dest_forms_by_field_name' => []
 			];
 			
 			// where source data/match fields are empty, use destination match/data field names
@@ -755,9 +757,15 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 				$source_project['source_match_field'] = $source_project['dest_match_field'];
 			}
 			foreach ($source_project['source_fields'] as $list_index => $field_name) {
+				// set to destination name if no alternate name used for source project
+				$matching_destination_field_name = $source_project['dest_fields'][$list_index];
 				if (empty($field_name)) {
-					$source_project['source_fields'][$list_index] = $source_project['dest_fields'][$list_index];
+					$source_project['source_fields'][$list_index] = $matching_destination_field_name;
 				}
+				
+				// add an entry to dest_forms_by_field_name for this source field
+				$actual_field_name = $source_project['source_fields'][$list_index];
+				$source_project['dest_forms_by_field_name'][$actual_field_name] = $Proj->metadata[$matching_destination_field_name]['form_name'];
 			}
 			
 			// add event id/name pairs
@@ -780,13 +788,42 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		}
 		$projects['destination']['pipe_on_status'] = $this->getProjectSetting('pipe-on-status');
 		
-		// add event id/names to destination project from global Project instance
-		global $Proj;
+		// add event id/names to destination project from global Project instance ($Proj is the destination/host project)
 		foreach ($Proj->events[1]['events'] as $event_id => $event_array) {
 			$projects['destination']['events'][$event_id] = $event_array['descrip'];
 		}
 		
 		return $projects;
+	}
+
+	function getFormStatusAllRecords($active_forms) {
+		/* for the forms given in the array above, return an array structured like
+		$form_status_all_records = [
+			// record id
+			[1] => [
+				// event id
+				[393] => [
+					"record_id" => 3,
+					"my_form_1" => 0	// designates incomplete (raw value from [my_form_1_complete] of destination project)
+					"my_form_2" => 2	// raw value 'Complete'
+					...
+				],
+				...
+			],
+			...
+		]
+		*/
+		if (empty($active_forms)) {
+			throw new \Exception("Can't get form statuses without providing form names");
+		}
+		
+		$fields = [];
+		foreach($active_forms as $form_name) {
+			$fields[] = $form_name . "_complete";
+		}
+		$data = \REDCap::getData('array', null, $fields);
+		
+		return $data;
 	}
 
 	// The following method can be replaced by $user->getRights() in framework version 2.
