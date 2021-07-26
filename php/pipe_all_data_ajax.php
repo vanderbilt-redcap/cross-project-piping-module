@@ -4,7 +4,6 @@
 
 // get information about configured source projects
 $projects = $module->getProjects();
-carl_log("\$projects: " . print_r($projects, true));
 
 $destination = $projects['destination'];
 $destination_events_by_name = array_flip($destination['events']);
