@@ -13,19 +13,41 @@ $map_of_record_ids_imported = [];
 $errors_set = false;
 
 // prepare the information necessary to implement active form filtering and form status filtering (as configured in module)
-// $active_forms = $module->getProjectSetting('active-forms');
-// $pipe_on_status = $module->getProjectSetting('pipe-on-status');
+$active_forms = $module->getProjectSetting('active-forms');
+if (count($active_forms) == 1 && empty($active_forms[0])) {		// framework-version 2 can return an array that's not quite empty ([[0] => null])
+	$active_forms = [];
+}
+$no_fields_piped = true;
 
 // iterate through each project
 foreach ($projects['source'] as $project_index => $source_project) {
 	// // prepare parameters for getting data from source project
+	// first, remove source fields that don't correlate to an 'active form' from configuration
+	if (!empty($active_forms)) {
+		$fields_to_remove = [];
+		foreach ($source_project['dest_forms_by_field_name'] as $field_name => $dest_form_name) {
+			if (array_search($dest_form_name, $active_forms, true) === false) {
+				$fields_to_remove[] = $field_name;
+			}
+		}
+		
+		foreach ($source_project['dest_fields'] as $index => $dest_field) {
+			if (array_search($dest_field, $fields_to_remove, true) !== false) {
+				unset($source_project['dest_fields'][$index]);
+				unset($source_project['source_fields'][$index]);
+				
+			}
+		}
+		$source_project['dest_fields'] = array_values($source_project['dest_fields']);
+		$source_project['source_fields'] = array_values($source_project['source_fields']);
+	}
 	
-	// // first, remove source fields that don't correlate to an 'active form' from configuration
-	// if (!empty($active_forms)) {
-		// foreach ($source_project['source_fields'] as $field_index => $field_name) {
-			
-		// }
-	// }
+	if (empty($source_project['dest_fields'])) {
+		// don't pipe
+		continue;
+	} else {
+		$no_fields_piped = false;
+	}
 	
 	// build param array
 	$get_data_params = [
@@ -73,35 +95,24 @@ foreach ($projects['source'] as $project_index => $source_project) {
 					unset($source_project['record_data'][$record_id][$event_id]);
 				}
 			}
-			
-			// // iterate again, this time removing fields whose destination record's matching form is above pipe-on-status limit
-			// foreach ($data as $field_name => $field_value) {
-				// // $destination_form_name = $source_project['dest_forms_by_field_name'][$field_name];
-				// $destination_form_complete_field = $Proj->metadata[$field_name]['form_name'] . "_complete";
-				
-				// // if form status for receiving record is above the pipe-on-status threshold, skip importing data for this event-form
-				// if (
-					// $form_statuses[$record_id] &&
-					// $form_statuses[$record_id][$dest_event_id] &&
-					// $form_statuses[$record_id][$dest_event_id][$destination_form_complete_field] > $pipe_on_status
-				// ) {
-					// continue;
-				// }
-			// }
 		}
 	}
 	
 	// save to destination (host) project
-	$source_project['save_results'] = \REDCap::saveData('array', $source_project['record_data']);
+	$source_project['save_results'] = \REDCap::saveData('array', $source_project['record_data'], 'overwrite');
 	
 	if (!empty($source_project['save_results']['errors'])) {
 		$errors_set = true;
-		$error_message .= print_r($source_project['save_results']['errors'], true);
+		$error_message .= "project_id: " . $source_project['project_id'] . " -- " . print_r($source_project['save_results']['errors'], true);
 	}
 	foreach ($source_project['save_results']['ids'] as $rid) {
 		$log_message .= "Record $rid imported from project (PID: " . $source_project['project_id'] . ")\n";
 		$map_of_record_ids_imported[$rid] = true;
 	}
+}
+
+if ($no_fields_piped) {
+	$log_message = "The Cross Project Piping module ran successfully but the combination of active forms and pipe fields configured resulted in 0 data fields being piped.";
 }
 
 // return OK or error to the user waiting on the record status dashboard

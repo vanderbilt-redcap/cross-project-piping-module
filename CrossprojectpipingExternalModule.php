@@ -764,7 +764,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 				}
 				
 				// add an entry to dest_forms_by_field_name for this source field
-				$actual_field_name = $source_project['source_fields'][$list_index];
+				$actual_field_name = $source_project['dest_fields'][$list_index];
 				$source_project['dest_forms_by_field_name'][$actual_field_name] = $Proj->metadata[$matching_destination_field_name]['form_name'];
 			}
 			
