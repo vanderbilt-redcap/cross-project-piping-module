@@ -19,9 +19,13 @@ if (count($active_forms) == 1 && empty($active_forms[0])) {		// framework-versio
 }
 $no_fields_piped = true;
 
+$pipe_on_status = $module->getProjectSetting('pipe-on-status');
+$form_statuses_all_records = $module->getFormStatusAllRecords($active_forms);
+
 // iterate through each project
 foreach ($projects['source'] as $project_index => $source_project) {
 	// // prepare parameters for getting data from source project
+	
 	// first, remove source fields that don't correlate to an 'active form' from configuration
 	if (!empty($active_forms)) {
 		$fields_to_remove = [];
@@ -95,11 +99,26 @@ foreach ($projects['source'] as $project_index => $source_project) {
 					unset($source_project['record_data'][$record_id][$event_id]);
 				}
 			}
+			
+			if (is_numeric($pipe_on_status)) {
+				// iterate again, this time removing fields whose destination record's matching form is above pipe-on-status limit
+				foreach ($data as $field_name => $field_value) {
+					$destination_form_complete_field = $Proj->metadata[$field_name]['form_name'] . "_complete";
+					
+					// if form status for receiving record is above the pipe-on-status threshold, skip importing data for this event-form
+					if (
+						is_numeric($form_statuses_all_records[$record_id][$dest_event_id][$destination_form_complete_field]) &&
+						$form_statuses_all_records[$record_id][$dest_event_id][$destination_form_complete_field] > $pipe_on_status
+					) {
+						unset($source_project['record_data'][$record_id][$dest_event_id][$field_name]);
+					}
+				}
+			}
 		}
 	}
 	
 	// save to destination (host) project
-	$source_project['save_results'] = \REDCap::saveData('array', $source_project['record_data'], 'overwrite');
+	$source_project['save_results'] = \REDCap::saveData('array', $source_project['record_data']);
 	
 	if (!empty($source_project['save_results']['errors'])) {
 		$errors_set = true;

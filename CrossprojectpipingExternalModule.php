@@ -814,7 +814,8 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		]
 		*/
 		if (empty($active_forms)) {
-			throw new \Exception("Can't get form statuses without providing form names");
+			global $Proj;
+			$active_forms = array_keys($Proj->forms);
 		}
 		
 		$fields = [];
