@@ -1,7 +1,6 @@
 <?php
 // http://localhost/redcap/redcap_v10.9.4/ExternalModules/?prefix=cross_project_piping&page=php%2Fpipe_all_data_ajax&pid=101#
 
-
 // get information about configured source projects
 $projects = $module->getProjects();
 
@@ -103,14 +102,21 @@ foreach ($projects['source'] as $project_index => $source_project) {
 			if (is_numeric($pipe_on_status)) {
 				// iterate again, this time removing fields whose destination record's matching form is above pipe-on-status limit
 				foreach ($data as $field_name => $field_value) {
-					$destination_form_complete_field = $Proj->metadata[$field_name]['form_name'] . "_complete";
+					$index = array_search($field_name, $source_project['source_fields'], true);
+					if ($index === false) {
+						continue;
+					}
+					$dest_field_name = $source_project['dest_fields'][$index];
+					$destination_form_complete_field = $Proj->metadata[$dest_field_name]['form_name'] . "_complete";
 					
 					// if form status for receiving record is above the pipe-on-status threshold, skip importing data for this event-form
+					$filtered_by_pipe_status = false;
 					if (
 						is_numeric($form_statuses_all_records[$record_id][$dest_event_id][$destination_form_complete_field]) &&
 						$form_statuses_all_records[$record_id][$dest_event_id][$destination_form_complete_field] > $pipe_on_status
 					) {
-						unset($source_project['record_data'][$record_id][$dest_event_id][$field_name]);
+						unset($source_project['record_data'][$record_id][$dest_event_id][$dest_field_name]);
+						$filtered_by_pipe_status = true;
 					}
 				}
 			}
