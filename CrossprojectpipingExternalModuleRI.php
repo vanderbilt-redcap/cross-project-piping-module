@@ -361,7 +361,7 @@ class CrossprojectpipingExternalModuleRI extends AbstractExternalModule
 				}
 			}
 		}
-
+		
 		// See if the term defined in this hook is used on this page
 		if (!isset($hook_functions[$term])) {
 			hook_log ("Skipping $term on $instrument of $project_id - not used.", "DEBUG");
@@ -387,7 +387,6 @@ class CrossprojectpipingExternalModuleRI extends AbstractExternalModule
 				$cachedDataDictionaries[$otherpid] = \REDCap::getDataDictionary($otherpid, 'array');
 			}
 			$metadata = $cachedDataDictionaries[$otherpid];
-
 			if (count($nodes) == 2) {
 				$fieldName = $nodes[1];
 			} else {
@@ -545,6 +544,8 @@ class CrossprojectpipingExternalModuleRI extends AbstractExternalModule
 								$.post(url, {
 									thisrecord: '<?= $_GET['id'] ?>',
 									thispid: <?= $_GET['pid'] ?>,
+									thiseid: "<?= $_GET['event_id'] ?>",
+									thisform: "<?= $_GET['page'] ?>",
 									thismatch: match[field]['params'],
 									matchsource: matchSourceParam,
 									getlabel: getLabel,

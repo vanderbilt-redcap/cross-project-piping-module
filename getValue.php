@@ -8,7 +8,7 @@
 	error_reporting(0);
 	
 	require_once APP_PATH_DOCROOT.'Classes/LogicTester.php';
-
+	
 	if($_POST['otherpid'] != $_POST['thispid']) {
 		\REDCap::allowProjects(array($_POST['otherpid'], $_POST['thispid']));
 	}
@@ -16,20 +16,33 @@
 	try {
 		$choices_obj = json_decode($_POST['choices'], true);
 	} catch(\Exception $e) {
-		$choices_obj = new \stdClass();;
+		$choices_obj = new \stdClass();
 	}
-	// $active_forms = $module->getProjectSetting('active-forms');
-	$instance_i = intval($_POST['thisinstance']);
 	
-	$thisjson = \REDCap::getData($_POST['thispid'], 'json', array($_POST['thisrecord']), array($_POST['thismatch'])); 
+	$thisdata = \REDCap::getData([
+		"project_id" => $_POST['thispid'],
+		"return_format" => "array",
+		"records" => $_POST['thisrecord'],
+		"fields" => $_POST['thismatch']
+	]); 
+	
+	// determine matchRecord (or leave as empty string if no matchRecord value found)
+	$matchRecord = "";
 	$thismatch = trim($_POST['thismatch']);
 	$thismatch = preg_replace("/^[\'\"]/", "", $thismatch);
 	$thismatch = preg_replace("/[\'\"]$/", "", $thismatch);
-	$thisdata = json_decode($thisjson, true);
-	$matchRecord = "";
-	foreach ($thisdata as $line) {
-		if ($line[$thismatch]) {
-			$matchRecord = $line[$thismatch];
+	$instance_i = intval($_POST['thisinstance']);
+	if ($instance_i >= 2) {
+		foreach ($thisdata[$_POST['thisrecord']]['repeat_instances'][$_POST['thiseid']][$_POST['thisform']][$instance_i] as $field_name => $value) {
+			if ($field_name == $thismatch && !empty($value)) {
+				$matchRecord = $value;
+			}
+		}
+	} else {
+		foreach ($thisdata[$_POST['thisrecord']][$_POST['thiseid']] as $field_name => $value) {
+			if ($field_name == $thismatch && !empty($value)) {
+				$matchRecord = $value;
+			}
 		}
 	}
 
@@ -50,12 +63,12 @@
 		reset($filterData);
 		$recordId = key($filterData);
 	}
-
+	
 	$data = \REDCap::getData($_POST['otherpid'], 'array', array($recordId));
 	if(empty($data)) {
 		return;
 	}
-
+	
 	$logic = $_POST['otherlogic'];
 	$nodes = preg_split("/\]\[/", $logic);
 	for ($i=0; $i < count($nodes); $i++) {
@@ -126,7 +139,8 @@
 				// } else if(!empty($instance[$eid][substr($logicItem, 1, -1)]) && is_array($instance[$eid][substr($logicItem, 1, -1)]) && !empty(reset($instance[$eid][substr($logicItem, 1, -1)]))) {
 				} else if(!empty($inst_field) && is_array($inst_field) && (reset($inst_field) == '0' or reset($inst_field) == '1')) {
 					header('Content-Type: application/json');
-					exit(json_encode($instance[$eid][substr($logicItem, 1, -1)]));
+					$returnVal = json_encode($instance[$eid][substr($logicItem, 1, -1)]);
+					exit($returnVal);
 				}
 			}
 		}
