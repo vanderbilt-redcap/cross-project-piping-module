@@ -32,13 +32,17 @@
 	$thismatch = preg_replace("/^[\'\"]/", "", $thismatch);
 	$thismatch = preg_replace("/[\'\"]$/", "", $thismatch);
 	$instance_i = intval($_POST['thisinstance']);
-	if ($instance_i >= 2) {
+	
+	$repeating_form_data = $thisdata[$_POST['thisrecord']]['repeat_instances'][$_POST['thiseid']][$_POST['thisform']];
+	if (!empty($repeating_form_data)) {
 		foreach ($thisdata[$_POST['thisrecord']]['repeat_instances'][$_POST['thiseid']][$_POST['thisform']][$instance_i] as $field_name => $value) {
 			if ($field_name == $thismatch && !empty($value)) {
 				$matchRecord = $value;
 			}
 		}
-	} else {
+	}
+	if (empty($matchRecord)) {
+		// look through base record field values
 		foreach ($thisdata[$_POST['thisrecord']][$_POST['thiseid']] as $field_name => $value) {
 			if ($field_name == $thismatch && !empty($value)) {
 				$matchRecord = $value;
