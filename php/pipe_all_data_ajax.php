@@ -1,6 +1,5 @@
 <?php
 // http://localhost/redcap/redcap_v10.9.4/ExternalModules/?prefix=cross_project_piping&page=php%2Fpipe_all_data_ajax&pid=101#
-
 // get information about configured source projects
 $projects = $module->getProjects();
 
@@ -53,27 +52,83 @@ foreach ($projects['source'] as $project_index => $source_project) {
 	}
 	
 	// build param array
+	if (empty($source_project['source_match_field'])) {
+		$source_project['source_match_field'] = $source_project['dest_match_field'];
+	}
+	$match_field_added = false;
+	if (!in_array($source_project['source_match_field'], $source_project['source_fields'], true)) {
+		$source_project['source_fields'][] = $source_project['source_match_field'];
+		$match_field_added = true;
+	}
 	$get_data_params = [
 		"project_id" => $source_project['project_id'],
 		"fields" => $source_project['source_fields'],
 		"filterLogic" => "[" . $source_project['source_match_field'] . "] != ''"
 	];
+	if ($match_field_added) {
+		if (($key = array_search($source_project['source_match_field'], $source_project['source_fields'])) !== false) {
+			unset($source_project['source_fields'][$key]);
+		}
+	}
 	
 	// pull relevant record data
 	$source_project['record_data'] = \REDCap::getData($get_data_params);
 	
-	// translate source FIELD names to destination FIELD names
-	// and
-	// translate source EVENT names to destination EVENT names
-	foreach ($source_project['record_data'] as $record_id => $record) {
+	/*
+	translate source FIELD names to destination FIELD names and
+	translate source EVENT names to destination EVENT names and
+	then copy translated source data to applicable record IDs before saving
+	*/
+	$destination_data = [];
+	foreach ($source_project['record_data'] as $record_id => &$record) {
+		// find out which destination record(s) need this source record's data
+		$dest_match_field = $source_project['dest_match_field'];
+		$record_match_value = null;
+		foreach ($record as $eid => $fields) {
+			foreach ($fields as $name => $value) {
+				if ($name == $source_project['source_match_field']) {
+					$record_match_value = $value;
+					// remove source match field unless it's specifically added to the set of source pipe fields
+					if ($match_field_added) {
+						unset($record[$eid][$name]);
+					}
+				}
+			}
+		}
+		
+		if (empty($record_match_value)) {
+			continue;
+		}
+		
+		// prepare parameters so we can get a list of records (by record ID) whose [dest_match_field] matches the source record's [source_match_field]
+		$params = [
+			"project_id" => $destination['project_id'],
+			"return_format" => "array",
+			"fields" => $Proj->table_pk,
+			"filterLogic" => "[$dest_match_field] = '$record_match_value'"
+		];
+		$dest_rids = array_keys(\REDCap::getData($params));
+		if (empty($dest_rids)) {
+			continue;
+		}
+		
 		foreach ($record as $event_id => $data) {
 			foreach ($data as $field_name => $field_value) {
+				// remove source match field if it's not supposed to pipe over
+				if (
+					$field_name == $source_project['source_match_field']
+					&&
+					!in_array($source_project['source_match_field'], $source_project['source_fields'], true)
+				) {
+					unset($record[$event_id][$field_name]);
+				}
+				
 				$dest_field_index = array_search($field_name, $source_project['source_fields'], true);
 				$dest_field_name = null;
 				if ($dest_field_index) {
 					$dest_field_name = $source_project['dest_fields'][$dest_field_index];
-					unset($source_project['record_data'][$record_id][$event_id][$field_name]);
-					$source_project['record_data'][$record_id][$event_id][$dest_field_name] = $field_value;
+					unset($record[$event_id][$field_name]);
+					$record[$event_id][$dest_field_name] = $field_value;
 				}
 				
 				// handle the case where $field_name is the record ID field name (which would get missed otherwise)
@@ -83,19 +138,19 @@ foreach ($projects['source'] as $project_index => $source_project) {
 					$field_name != $source_project['dest_match_field']
 				) {
 					$dest_record_id_field_name = $source_project['dest_match_field'];
-					$source_project['record_data'][$record_id][$event_id][$dest_record_id_field_name] = $field_value;
+					$record[$event_id][$dest_record_id_field_name] = $field_value;
 					
 					// remove source match field name
-					unset($source_project['record_data'][$record_id][$event_id][$field_name]);
+					unset($record[$event_id][$field_name]);
 				}
 			}
 			
 			$event_name = $source_project['events'][$event_id];
 			$dest_event_id = $destination_events_by_name[$event_name];
 			if ($dest_event_id) {
-				$source_project['record_data'][$record_id][$dest_event_id] = $source_project['record_data'][$record_id][$event_id];
+				$record[$dest_event_id] = $record[$event_id];
 				if ($dest_event_id != $event_id) {
-					unset($source_project['record_data'][$record_id][$event_id]);
+					unset($record[$event_id]);
 				}
 			}
 			
@@ -115,16 +170,25 @@ foreach ($projects['source'] as $project_index => $source_project) {
 						is_numeric($form_statuses_all_records[$record_id][$dest_event_id][$destination_form_complete_field]) &&
 						$form_statuses_all_records[$record_id][$dest_event_id][$destination_form_complete_field] > $pipe_on_status
 					) {
-						unset($source_project['record_data'][$record_id][$dest_event_id][$dest_field_name]);
+						unset($record[$dest_event_id][$dest_field_name]);
 						$filtered_by_pipe_status = true;
 					}
 				}
 			}
 		}
+		
+		foreach($dest_rids as $dest_rid) {
+			if (isset($destination_data[$dest_rid])) {
+				$destination_data[$dest_rid] = array_merge($destination_data[$dest_rid], $source_project['record_data'][$record_id]);
+			} else {
+				$destination_data[$dest_rid] = $source_project['record_data'][$record_id];
+			}
+		}
 	}
 	
 	// save to destination (host) project
-	$source_project['save_results'] = \REDCap::saveData('array', $source_project['record_data']);
+	// $source_project['save_results'] = \REDCap::saveData('array', $source_project['record_data']);
+	$source_project['save_results'] = \REDCap::saveData('array', $destination_data);
 	
 	if (!empty($source_project['save_results']['errors'])) {
 		$errors_set = true;
