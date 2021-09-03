@@ -82,7 +82,6 @@
 		$logicItems = array($fieldName => $logic);
 	}
 
-
 	$found = false;
 	foreach ($data as $record => $recData) {
 		$Proj = new \Project($_POST['otherpid']);
@@ -90,7 +89,15 @@
 			if (\LogicTester::isValid($logicItem)) {
 				$result = \LogicTester::apply($logicItem, $recData, $Proj, true);
 				if ($result || $result === "0" || $result === 0) {
-					$choices = json_decode($_POST['choices'], true);
+					// escape choice key/values
+					$insecure_choices = json_decode($_POST['choices'], true);
+					$choices;
+					foreach ($insecure_choices as $k1 => $v1) {
+						foreach ($v1 as $k2 => $v2) {
+							$choices[db_escape($k1)][db_escape($k2)] = db_escape($v2);
+						}
+					}
+					
 					if (isset($choices[$field])) {
 						if (isset($choices[$field][$result])) {
 							if ($_POST['getlabel'] != 0) {

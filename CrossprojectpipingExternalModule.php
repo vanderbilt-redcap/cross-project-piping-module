@@ -545,7 +545,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 								matchSourceParam = matchSource[field]['params'];
 							}
 
-							var url = "<?= $url ?>"+"&pid="+<?= $_GET['pid'] ?>;
+							var url = "<?= $url ?>"+"&pid="+<?= intval($_GET['pid']) ?>;
 							var getLabel = 0;
 							if (($('[name="'+field+'"]').attr("type") == "text") || ($('[name="'+field+'"]').attr("type") == "notes")) {
 								getLabel = 1;
@@ -557,7 +557,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 								var ajaxCountLimit = 0;
 								// console.log('++cppAjaxConnections = '+cppAjaxConnections);
 								
-								$.post(url, { thisrecord: '<?= $_GET['id'] ?>', thispid: <?= $_GET['pid'] ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
+								$.post(url, { thisrecord: '<?= $_GET['id'] ?>', thispid: <?= intval($_GET['pid']) ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
 									if(data.length && typeof(data) == 'string' && data.indexOf('multiple browser tabs of the same REDCap page. If that is not the case') >= 0) {
 										if(ajaxCountLimit >= 1000) {
 											return;
