@@ -1,4 +1,5 @@
 <?php
+header('Content-Type: application/json');
 
 // get information about configured source projects
 $module->projects = $module->getProjects();
@@ -29,7 +30,6 @@ foreach ($module->projects['destination']['records_match_fields'] as $rid => $in
 \REDCap::logEvent("Cross Project Piping: Pipe All Records",
 	"The module succeeded in importing $successes records and failed to import $failures records.");
 
-header('Content-Type: application/json');
 $response = [];
 if (empty($errors)) {
 	$response['success'] = true;
