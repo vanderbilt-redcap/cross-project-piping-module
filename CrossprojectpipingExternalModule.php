@@ -776,10 +776,29 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			foreach ($project_obj->events[1]['events'] as $event_id => $event_array) {
 				$source_project['events'][$event_id] = $event_array['descrip'];
 			}
-			unset($project_obj);
+			
+			// add 'valid_match_events' array to this source project -- this will contain the event_id values associated with each form that contains the destinatiion match field
+			$valid_match_event_ids = [];
+			$dest_match_field_form = $Proj->metadata[$source_project['dest_match_field']]['form_name'];
+			foreach ($Proj->eventsForms as $eid => $formlist) {
+				if (in_array($formlist, $dest_match_field_form) !== false) {
+					$dst_event_name = $Proj->eventInfo[$eid]['name_ext'];
+					if (!empty($dst_event_name)) {
+						foreach ($project_obj->eventInfo as $eid2 => $info) {
+							if ($info['name_ext'] === $dst_event_name)
+								$src_eid = $eid2;
+						}
+						if (!empty($src_eid)) {
+							$valid_match_event_ids[] = $src_eid;
+						}
+					}
+				}
+			}
+			$source_project['valid_match_event_ids'] = $valid_match_event_ids;
 			
 			// store project info array in projects['source'] array
 			$projects['source'][] = $source_project;
+			unset($project_obj);
 		}
 		
 		// for destination project, prepare list of forms to limit piping to
@@ -794,7 +813,6 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		foreach ($Proj->events[1]['events'] as $event_id => $event_array) {
 			$projects['destination']['events'][$event_id] = $event_array['descrip'];
 		}
-		
 		return $projects;
 	}
 
@@ -915,7 +933,8 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			}
 			
 			// is the source match field in the set of piped fields?
-			$source_match_field_is_in_pipe_fields = in_array($src_project['source_match_field'], $src_project['source_fields'], true);
+			$src_match_field = $src_project['source_match_field'];
+			$source_match_field_is_in_pipe_fields = in_array($src_match_field, $src_project['source_fields'], true) !== false;
 			
 			// copy pipe values from source records whose match field value matches
 			foreach ($src_project['source_data'] as $src_rid => $src_rec) {
@@ -925,14 +944,25 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 					$src_event_name = $src_project['events'][$eid];
 					$dst_event_id = array_search($src_event_name, $this->projects['destination']['events'], true);
 					
-					// skip this event, a matching event name isn't found in the destination project
+					// skip this event if a matching event name wasn't found in the destination project
 					if (empty($dst_event_id)) {
 						continue;
 					}
+					
+					// skip this event if the event_id isn't valid (eid is only valid if it has the same name as the name of the event contains the form that contains the destination match field)
+					if (in_array($eid, $source_project['valid_match_event_ids']) === false) {
+						continue;
+					}
+					
+					// if the source record doesn't match the destination record, continue
+					if ($record_match_value != $field_data[$src_match_field]) {
+						continue;
+					}
+					
 					foreach ($field_data as $field_name => $field_value) {
 						// skip this field if it's the match field and match field isn't in the set of fields to be piped
 						if (
-							$field_name == $src_project['source_match_field']
+							$field_name == $src_match_field
 							&&
 							!$source_match_field_is_in_pipe_fields
 						) {
