@@ -16,19 +16,28 @@ $module->formStatuses = $module->getFormStatusAllRecords($module->active_forms);
 
 $failures = 0;
 $successes = 0;
+$pipe_attempts = 0;
 
 foreach ($module->projects['destination']['records_match_fields'] as $rid => $info) {
 	$save_result = $module->pipeToRecord($rid);
+	$pipe_attempts++;
 	
-	if ($save_result['ids'][1] == $rid) {
+	
+	if (reset($save_result['ids']) == $rid) {
 		$successes++;
 	} elseif (!empty($save_result['errors'])) {
 		$failures++;
 	}
 }
 
+$no_change_records = $pipe_attempts - $successes - $failures;
+$changed_records = $pipe_attempts - $no_change_records;
+
 \REDCap::logEvent("Cross Project Piping: Pipe All Records",
-	"The module succeeded in importing $successes records and failed to import $failures records.");
+	"Records piped: $pipe_attempts.
+	Successes: $successes.
+	Failures: $failures.
+	Changed / Unchanged records: $changed_records / $no_change_records");
 
 $response = [];
 if (empty($errors)) {
