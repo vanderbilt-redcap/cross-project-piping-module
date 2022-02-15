@@ -13,6 +13,7 @@ if (count($module->active_forms) == 1 && empty($module->active_forms[0])) {		// 
 }
 $module->pipe_on_status = $module->getProjectSetting('pipe-on-status');
 $module->formStatuses = $module->getFormStatusAllRecords($module->active_forms);
+$verbose_failure_logging = $module->getProjectSetting("verbose-pipe-all-failure-logging");
 
 $failures = 0;
 $successes = 0;
@@ -22,11 +23,13 @@ foreach ($module->projects['destination']['records_match_fields'] as $rid => $in
 	$save_result = $module->pipeToRecord($rid);
 	$pipe_attempts++;
 	
-	
 	if (reset($save_result['ids']) == $rid) {
 		$successes++;
 	} elseif (!empty($save_result['errors'])) {
 		$failures++;
+		if (!empty($verbose_failure_logging)) {
+			\REDCap::logEvent("Cross-Project Piping Module", "Verbose Pipe-All piping failure information for record $rid:\n" . implode($save_result['errors'], "\n"));
+		}
 	}
 }
 

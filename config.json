@@ -132,6 +132,13 @@
 			"repeatable": false
 		},
 		{
+			"key": "verbose-pipe-all-failure-logging",
+			"name": "Enable verbose logging for record pipe failures when piping via 'Pipe All' button",
+			"required": false,
+			"type": "checkbox",
+			"repeatable": false
+		},
+		{
 			"key": "pipe-on-status",
 			"name": "Allow piping on forms this status or less",
 			"type": "dropdown",
