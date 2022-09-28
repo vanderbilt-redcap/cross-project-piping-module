@@ -295,7 +295,8 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		$keys = $this->getKeysFromConfig($config);
 		$subSettings = [];
 		$rawSettings = ExternalModules::getProjectSettingsAsArray([$this->PREFIX], $project_id);
-		$subSettingCount = count($rawSettings[$keys[0]['key']]['value']);
+		# Quick-Fix for PHP8 Support
+		$subSettingCount = count((array)$rawSettings[$keys[0]['key']]['value']);
 		$this->pipingMode = (isset($rawSettings['piping-mode']['value'])) ? $rawSettings['piping-mode']['value'] : 0 ;
 		$this->pipeOnStatus = (isset($rawSettings['pipe-on-status']['value'])) ? $rawSettings['pipe-on-status']['value'] : 0 ;
 		for($i=0; $i<$subSettingCount; $i++){
@@ -781,7 +782,8 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			$valid_match_event_ids = [];
 			$dest_match_field_form = $Proj->metadata[$source_project['dest_match_field']]['form_name'];
 			foreach ($Proj->eventsForms as $eid => $formlist) {
-				if (in_array($formlist, $dest_match_field_form) !== false) {
+				# Quick-Fix for PHP8 Support
+				if (in_array($formlist, (array) $dest_match_field_form) !== false) {
 					$dst_event_name = $Proj->eventInfo[$eid]['name_ext'];
 					if (!empty($dst_event_name)) {
 						foreach ($project_obj->eventInfo as $eid2 => $info) {
@@ -950,7 +952,8 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 					}
 					
 					// skip this event if the event_id isn't valid (eid is only valid if it has the same name as the name of the event contains the form that contains the destination match field)
-					if (in_array($eid, $source_project['valid_match_event_ids']) === false) {
+					# Quick-Fix for PHP8 Support
+					if (in_array($eid, (array) $source_project['valid_match_event_ids']) === false) {
 						continue;
 					}
 					
