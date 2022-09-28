@@ -22,8 +22,9 @@ $pipe_attempts = 0;
 foreach ($module->projects['destination']['records_match_fields'] as $rid => $info) {
 	$save_result = $module->pipeToRecord($rid);
 	$pipe_attempts++;
-	
-	if (reset($save_result['ids']) == $rid) {
+	# Quick-Fix for PHP8 Support
+	$ids = (array) $save_result['ids'];
+	if (reset($ids) == $rid) {
 		$successes++;
 	} elseif (!empty($save_result['errors'])) {
 		$failures++;
