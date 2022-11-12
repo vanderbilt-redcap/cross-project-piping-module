@@ -783,7 +783,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			$dest_match_field_form = $Proj->metadata[$source_project['dest_match_field']]['form_name'];
 			foreach ($Proj->eventsForms as $eid => $formlist) {
 				# Quick-Fix for PHP8 Support
-				if (in_array($formlist, (array) $dest_match_field_form) !== false) {
+				if (in_array(implode("", (array) $dest_match_field_form), $formlist) !== false) {
 					$dst_event_name = $Proj->eventInfo[$eid]['name_ext'];
 					if (!empty($dst_event_name)) {
 						foreach ($project_obj->eventInfo as $eid2 => $info) {
@@ -953,7 +953,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 					
 					// skip this event if the event_id isn't valid (eid is only valid if it has the same name as the name of the event contains the form that contains the destination match field)
 					# Quick-Fix for PHP8 Support
-					if (in_array($eid, (array) $source_project['valid_match_event_ids']) === false) {
+					if (in_array($eid, (array) $src_project['valid_match_event_ids']) === false) {
 						continue;
 					}
 					
@@ -971,9 +971,14 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 						) {
 							continue;
 						}
-						
+
+						// get the destination project's name for this source pipe field
+						$pipe_field_index = array_search($field_name, $src_project['source_fields'], true);
+						$dst_name = $src_project['dest_fields'][$pipe_field_index];
+
 						// skip this field if the destination record's form status for the containing form is above the pipe limit
-						$form_name = $src_project['dest_forms_by_field_name'][$field_name];
+						$form_name = $src_project['dest_forms_by_field_name'][$dst_name];
+
 						if (intval($this->formStatuses[$dst_rid][$dst_event_id][$form_name . '_complete']) > $this->pipe_on_status) {
 							continue;
 						}
@@ -982,10 +987,6 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 						if (!empty($this->active_forms) && !in_array($form_name, $this->active_forms)) {
 							continue;
 						}
-						
-						// get the destination project's name for this source pipe field
-						$pipe_field_index = array_search($field_name, $src_project['source_fields'], true);
-						$dst_name = $src_project['dest_fields'][$pipe_field_index];
 						
 						if (!empty($dst_name)) {
 							$data_to_save[$dst_rid][$dst_event_id][$dst_name] = $field_value;
