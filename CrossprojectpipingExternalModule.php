@@ -783,7 +783,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			$dest_match_field_form = $Proj->metadata[$source_project['dest_match_field']]['form_name'];
 			foreach ($Proj->eventsForms as $eid => $formlist) {
 				# Quick-Fix for PHP8 Support
-				if (in_array(implode("", (array) $dest_match_field_form), $formlist) !== false) {
+				if (in_array(implode("", (array) $dest_match_field_form), (array) $formlist) !== false) {
 					$dst_event_name = $Proj->eventInfo[$eid]['name_ext'];
 					if (!empty($dst_event_name)) {
 						foreach ($project_obj->eventInfo as $eid2 => $info) {
