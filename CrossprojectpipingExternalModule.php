@@ -917,10 +917,11 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			return;
 		}
 		
-		// create the array that we'll eventually give to REDCap::saveData
+		// create the arrays that we'll eventually give to REDCap::saveData
 		$data_to_save = [
 			"$dst_rid" => []
 		];
+		$data_repeatable_to_save = [];
 		
 		// for every source project:
 		foreach ($this->projects['source'] as $p_index => $src_project) {
@@ -928,9 +929,9 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			$dest_match_field = $src_project['dest_match_field'];
 			$record_match_value = $record_match_info[$dest_match_field];
 			
-			// if destination match field empty, continue to next project
+			// if destination match field empty, there may be a repeatable instrument
 			if (empty($record_match_value)) {
-				continue;
+				$record_match_value = $record_match_info;
 			}
 			
 			// is the source match field in the set of piped fields?
@@ -956,9 +957,27 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 						continue;
 					}
 					
-					// if the source record doesn't match the destination record, continue
+					// if the source record doesn't match the destination record, it may be a repeatable record
+					// if it's a repeatable record, check if any of the instances contains the destination field
+					// that match the source field. If not, continue
+					$repeatable = false;
+					$instances = [];
 					if ($record_match_value != $field_data[$src_match_field]) {
-						continue;
+						$equal = false;
+						foreach($record_match_value as $event_id => $event_result) {
+							foreach($event_result as $form_name => $form_result) {
+								foreach($form_result as $instance => $instance_result) {
+									if ($instance_result[$dest_match_field] == $field_data[$src_match_field]) {
+										$equal = true;
+										array_push($instances, $instance);
+									}
+								}
+							}
+						}
+						if ($equal === false) {
+							continue;
+						}
+						$repeatable = true;
 					}
 					
 					foreach ($field_data as $field_name => $field_value) {
@@ -988,7 +1007,17 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 						}
 						
 						if (!empty($dst_name)) {
-							$data_to_save[$dst_rid][$dst_event_id][$dst_name] = $field_value;
+							if ($repeatable === false) {
+								$data_to_save[$dst_rid][$dst_event_id][$dst_name] = $field_value;
+							} else {
+								foreach($instances as $instance) {
+									$json_data = '{"record_id":"' . $dst_rid .
+										'","redcap_repeat_instrument":"'. $form_name .
+										'","redcap_repeat_instance":'. $instance .
+										',"' . $dst_name . '":"' . $field_value . '"}';
+									array_push($data_repeatable_to_save, json_decode($json_data));
+								}
+							}
 						}
 					}
 				}
@@ -998,6 +1027,11 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		if (!empty($data_to_save[$dst_rid])) {
 			$result = \REDCap::saveData('array', $data_to_save);
 			return $result;
+		}
+
+		if (!empty($data_repeatable_to_save)) {
+			$repeatable_result = \REDCap::saveData('json', json_encode($data_repeatable_to_save), 'normal');
+			return $repeatable_result;
 		}
 	}
 	
