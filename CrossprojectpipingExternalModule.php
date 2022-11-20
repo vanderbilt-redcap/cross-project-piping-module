@@ -811,8 +811,15 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		$projects['destination']['pipe_on_status'] = $this->getProjectSetting('pipe-on-status');
 		
 		// add event id/names to destination project from global Project instance ($Proj is the destination/host project)
-		foreach ($Proj->events[1]['events'] as $event_id => $event_array) {
-			$projects['destination']['events'][$event_id] = $event_array['descrip'];
+		foreach($Proj->events as $arm_number => $arm_details) {
+			foreach ($arm_details['events'] as $event_id => $event_array) {
+				$projects['destination']['events'][$event_id] = $event_array['descrip'];
+				$projects['destination']['event_details'][$event_id] = [
+					"arm"=>$arm_number,
+					"name"=>$event_array['descrip'],
+					"unique_name"=>strtolower(str_replace(" ", "_", $event_array['descrip']) . "_arm_$arm_number")
+				];
+			}
 		}
 		return $projects;
 	}
@@ -1012,6 +1019,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 							} else {
 								foreach($instances as $instance) {
 									$json_data = '{"record_id":"' . $dst_rid .
+										'","redcap_event_name":"'. $this->projects['destination']['event_details'][$dst_event_id]['unique_name'] .
 										'","redcap_repeat_instrument":"'. $form_name .
 										'","redcap_repeat_instance":'. $instance .
 										',"' . $dst_name . '":"' . $field_value . '"}';
