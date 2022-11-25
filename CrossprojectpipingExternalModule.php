@@ -628,7 +628,10 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 											}
 											dFFormat = dFFormatArr.join('-');
 
-											var newDate = $.datepicker.formatDate(dFFormat, new Date(data.replace(/\-/g,' ')));
+											const datepickerDate = new Date(data)
+											datepickerDate.setTime(datepickerDate.getTime()+datepickerDate.getTimezoneOffset()*60000) // Fix any timezone vs. UTC related date shifting
+
+											var newDate = $.datepicker.formatDate(dFFormat, datepickerDate);
 											
 											if(!newDate.includes('NaN') && data.length >= 1) {
 												var dateTimeStr = '';
