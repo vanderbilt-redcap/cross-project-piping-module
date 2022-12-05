@@ -1020,10 +1020,18 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 							if ($repeatable === false) {
 								$data_to_save[$dst_rid][$dst_event_id][$dst_name] = $field_value;
 							} else {
+								// create an instance of destination project
+								$destProj = new \Project($this->projects['destination']['projectId']);
+								// check to see if destination project has repeating forms
+								$hasRepeatingForms = $destProj->hasRepeatingForms();
 								foreach($instances as $instance) {
 									$json_data = '{"record_id":"' . $dst_rid .
-										'","redcap_event_name":"'. $this->projects['destination']['event_details'][$dst_event_id]['unique_name'] .
-										'","redcap_repeat_instrument":"'. $form_name .
+										'","redcap_event_name":"'. $this->projects['destination']['event_details'][$dst_event_id]['unique_name'];
+									// if destination project has repeating form(s), add `redcap_repeat_instrument` field to json data
+									if ($hasRepeatingForms === true) {
+										$json_data = $json_data . '","redcap_repeat_instrument":"'. $form_name;
+									}
+									$json_data = $json_data .
 										'","redcap_repeat_instance":'. $instance .
 										',"' . $dst_name . '":"' . $field_value . '"}';
 									array_push($data_repeatable_to_save, json_decode($json_data));
