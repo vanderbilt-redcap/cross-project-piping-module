@@ -967,20 +967,18 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 						continue;
 					}
 					
-					// if the source record doesn't match the destination record, it may be a repeatable record
-					// if it's a repeatable record, check if any of the instances contains the destination field
-					// that match the source field. If not, continue
+					// if the source record match field doesn't match the destination record match field,
+					// it may be a repeatable record. If it's a repeatable record, check if any of the
+					// instances contains the destination field that match the source field. If not, continue
 					$repeatable = false;
 					$instances = [];
 					if ($record_match_value != $field_data[$src_match_field]) {
 						$equal = false;
-						foreach($record_match_value as $event_id => $event_result) {
-							foreach($event_result as $form_name => $form_result) {
-								foreach($form_result as $instance => $instance_result) {
-									if ($instance_result[$dest_match_field] == $field_data[$src_match_field]) {
-										$equal = true;
-										array_push($instances, $instance);
-									}
+						foreach($record_match_value[$dst_event_id] as $form_name => $form_result) {
+							foreach($form_result as $instance => $instance_result) {
+								if ($instance_result[$dest_match_field] == $field_data[$src_match_field]) {
+									$equal = true;
+									array_push($instances, $instance);
 								}
 							}
 						}
@@ -990,6 +988,16 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 						$repeatable = true;
 					}
 					
+					// get matching record field value
+					$params = [
+						'project_id' => $this->projects['destination']['project_id'],
+						'return_format' => 'array',
+						'events' => $dst_event_id,
+						'records' => $dst_rid,
+						'fields' => $src_project['dest_fields']
+					];
+					$record_details = \REDCap::getData($params);
+
 					foreach ($field_data as $field_name => $field_value) {
 						// skip this field if it's the match field and match field isn't in the set of fields to be piped
 						if (
@@ -1025,6 +1033,15 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 								// check to see if destination project has repeating forms
 								$hasRepeatingForms = $destProj->hasRepeatingForms();
 								foreach($instances as $instance) {
+									// get destination field value from record match info
+									$dest_field_value = $hasRepeatingForms === true ?
+										$record_details[$dst_rid]["repeat_instances"][$dst_event_id][$form_name][$instance][$dst_name] :
+										$record_details[$dst_rid]["repeat_instances"][$dst_event_id][""][$instance][$dst_name];
+									// if destination field already has a value that matches source value,
+									// we'll skip it - since updating will have no change to the value
+									if ($dest_field_value === $field_value) {
+										continue;
+									}
 									$json_data = '{"record_id":"' . $dst_rid .
 										'","redcap_event_name":"'. $this->projects['destination']['event_details'][$dst_event_id]['unique_name'];
 									// if destination project has repeating form(s), add `redcap_repeat_instrument` field to json data
