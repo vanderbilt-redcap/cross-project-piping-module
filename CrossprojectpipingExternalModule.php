@@ -529,7 +529,8 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 						}
 						dFFormat = dFFormatArr.join('-');
 
-						const datepickerDate = new Date(data)
+						const dataParams = data.split(' ')
+						const datepickerDate = new Date(dataParams[0])
 						datepickerDate.setTime(datepickerDate.getTime()+datepickerDate.getTimezoneOffset()*60000) // Fix any timezone vs. UTC related date shifting
 
 						var newDate = $.datepicker.formatDate(dFFormat, datepickerDate);
@@ -537,7 +538,6 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 						if(!newDate.includes('NaN') && data.length >= 1) {
 							var dateTimeStr = '';
 							if(dateFormatParams[0] == 'datetime') {
-								const dataParams = data.split(' ')
 								let dateTimeData
 								if(dataParams.length === 1){
 									dateTimeData = []
@@ -602,6 +602,22 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 									},
 									time: '06:07',
 									seconds: '08'
+								}
+							},
+							{
+								/**
+								 * Make sure timezone adjustment does not shift times later in the day
+								 * over into the next day
+								 */
+								input: '2022-11-13 19:34',
+								outputs: {
+									date: {
+										dmy: '13-11-2022',
+										mdy: '11-13-2022',
+										ymd: '2022-11-13'
+									},
+									time: '19:34',
+									seconds: '00'
 								}
 							}
 						]
