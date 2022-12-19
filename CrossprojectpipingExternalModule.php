@@ -520,6 +520,48 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 						$('#cppAjaxLoaderInner').css('top', cppAjaxLoaderInnerOffset+'px');
 					<?php endif; ?>
 
+					const formatDate = (data, dateFormatStr, ) => {
+						var dateFormatParams = dateFormatStr.split('_');
+						var dFFormatParams = dateFormatParams.slice(-1)[0].split('');
+						var dFFormatArr = [];
+						for (var i = 0, len = dFFormatParams.length; i < len; i++) {
+							dFFormatArr.push(dFFormatParams[i]+dFFormatParams[i]);
+						}
+						dFFormat = dFFormatArr.join('-');
+
+						const datepickerDate = new Date(data)
+						datepickerDate.setTime(datepickerDate.getTime()+datepickerDate.getTimezoneOffset()*60000) // Fix any timezone vs. UTC related date shifting
+
+						var newDate = $.datepicker.formatDate(dFFormat, datepickerDate);
+						
+						if(!newDate.includes('NaN') && data.length >= 1) {
+							var dateTimeStr = '';
+							var dateTimeData = [];
+							if(dateFormatParams[0] == 'datetime') {
+								const dataParams = data.split(' ');
+								data = dataParams[0];
+								
+								if(dataParams.length <= 1 || dataParams[1].length < 3) {
+									dateTimeData = ['00', '00', '00'];
+								} else {
+									dateTimeData = dataParams[1].split(':');
+								}
+								var dateTimeVal = dateTimeData[0]+':'+dateTimeData[1];
+								if(dateFormatParams.length > 2) {
+									var dateTimeVal = dateTimeVal+':'+dateTimeData[2];
+								}
+								if(dateTimeVal.length) {
+									dateTimeStr = ' '+dateTimeVal;
+								}
+								
+							}
+
+							return newDate + dateTimeStr
+						}
+
+						return false
+					}
+
 					var cppAjaxConnections = 0;
 					var cppFoundField = false;
 					var cppProcessing = true;
@@ -619,43 +661,9 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 										// Is this a date field? If so we need to format this date correctly.
 										if($('[name="'+field+'"]').hasClass('hasDatepicker') || (typeof $('[name="'+field+'"]').attr('fv') !== 'undefined' && $('[name="'+field+'"]').attr('fv').includes('date_'))) {
 											var dateFormatStr = $('[name="'+field+'"]').attr('fv');
-											var dateFormatParams = dateFormatStr.split('_');
-											var dFFKey = 1;
-											var dFFormatParams = dateFormatParams.slice(-1)[0].split('');
-											var dFFormatArr = [];
-											for (var i = 0, len = dFFormatParams.length; i < len; i++) {
-												dFFormatArr.push(dFFormatParams[i]+dFFormatParams[i]);
-											}
-											dFFormat = dFFormatArr.join('-');
-
-											const datepickerDate = new Date(data)
-											datepickerDate.setTime(datepickerDate.getTime()+datepickerDate.getTimezoneOffset()*60000) // Fix any timezone vs. UTC related date shifting
-
-											var newDate = $.datepicker.formatDate(dFFormat, datepickerDate);
-											
-											if(!newDate.includes('NaN') && data.length >= 1) {
-												var dateTimeStr = '';
-												var dateTimeData = [];
-												if(dateFormatParams[0] == 'datetime') {
-													dataParams = data.split(' ');
-													data = dataParams[0];
-													
-													if(dataParams.length <= 1 || dataParams[1].length < 3) {
-														dateTimeData = ['00', '00', '00'];
-													} else {
-														dateTimeData = dataParams[1].split(':');
-													}
-													var dateTimeVal = dateTimeData[0]+':'+dateTimeData[1];
-													if(dateFormatParams.length > 2) {
-														var dateTimeVal = dateTimeVal+':'+dateTimeData[2];
-													}
-													if(dateTimeVal.length) {
-														dateTimeStr = ' '+dateTimeVal;
-													}
-													
-												}
-
-												$('[name="'+field+'"]').val(newDate + dateTimeStr);
+											const newDateString = formatDate(data, dateFormatStr)
+											if(newDateString){
+												$('[name="'+field+'"]').val(newDateString);
 												addBranchingField(field, $('[name="'+field+'"]'));
 												// $('[name="'+field+'"]').change();
 											}
