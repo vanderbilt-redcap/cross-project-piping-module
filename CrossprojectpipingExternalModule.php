@@ -536,16 +536,20 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 						
 						if(!newDate.includes('NaN') && data.length >= 1) {
 							var dateTimeStr = '';
-							var dateTimeData = [];
 							if(dateFormatParams[0] == 'datetime') {
-								const dataParams = data.split(' ');
-								data = dataParams[0];
-								
-								if(dataParams.length <= 1 || dataParams[1].length < 3) {
-									dateTimeData = ['00', '00', '00'];
-								} else {
-									dateTimeData = dataParams[1].split(':');
+								const dataParams = data.split(' ')
+								let dateTimeData
+								if(dataParams.length === 1){
+									dateTimeData = []
 								}
+								else{
+									dateTimeData = dataParams[1].split(':')
+								}
+
+								while(dateTimeData.length < 3){
+									dateTimeData.push('00')
+								}
+
 								var dateTimeVal = dateTimeData[0]+':'+dateTimeData[1];
 								if(dateFormatParams.length > 2) {
 									var dateTimeVal = dateTimeVal+':'+dateTimeData[2];
@@ -553,13 +557,90 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 								if(dateTimeVal.length) {
 									dateTimeStr = ' '+dateTimeVal;
 								}
-								
 							}
 
 							return newDate + dateTimeStr
 						}
 
 						return false
+					}
+
+					// Only run unit tests when on a dev/test server
+					if(<?=json_encode(($GLOBALS['is_development_server']) === '1')?>){
+						const tests = [
+							{
+								input: '2001-02-03',
+								outputs: {
+									date: {
+										dmy: '03-02-2001',
+										mdy: '02-03-2001',
+										ymd: '2001-02-03'
+									},
+									time: '00:00',
+									seconds: '00'
+								}
+							},
+							{
+								input: '2011-02-03 04:05',
+								outputs: {
+									date: {
+										dmy: '03-02-2011',
+										mdy: '02-03-2011',
+										ymd: '2011-02-03'
+									},
+									time: '04:05',
+									seconds: '00'
+								}
+							},
+							{
+								input: '2021-02-03 06:07:08',
+								outputs: {
+									date: {
+										dmy: '03-02-2021',
+										mdy: '02-03-2021',
+										ymd: '2021-02-03'
+									},
+									time: '06:07',
+									seconds: '08'
+								}
+							}
+						]
+
+						let testOutput = ''
+						tests.forEach(test => {
+							[
+								'date_dmy',
+								'date_mdy',
+								'date_ymd',
+								'datetime_dmy',
+								'datetime_mdy',
+								'datetime_ymd',
+								'datetime_seconds_dmy',
+								'datetime_seconds_mdy',
+								'datetime_seconds_ymd'
+							].forEach(format => {
+								const actualOutput = formatDate(test.input, format)
+								const parts = format.split('_')
+								const dateFormat = parts.pop()
+								
+								let expectedOutput = test.outputs.date[dateFormat]
+								if(parts[0] === 'datetime'){
+									expectedOutput += ' ' + test.outputs.time
+								}
+
+								if(parts.length === 2){
+									expectedOutput += ':' + test.outputs.seconds
+								}
+
+								if(actualOutput !== expectedOutput){
+									testOutput += 'The formateDate() function returned "' + actualOutput + '" instead of "' + expectedOutput + '" for input "' + test.input + '" and format "' + format + '"!<br>'
+								}
+							})
+						})
+
+						if(testOutput.length > 0){
+							simpleDialog(testOutput, 'Cross Project Piping Module - Test Failures', null, 1100)
+						}
 					}
 
 					var cppAjaxConnections = 0;
