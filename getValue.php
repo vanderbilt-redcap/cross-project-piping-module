@@ -111,12 +111,12 @@
 					} else {
 						$returnVal = $result;
 					}
-					echo $returnVal;
+					echo $module->escape($returnVal);
 					$found = true;
 					break;
 				} else if(!empty($recData[$Proj->firstEventId][substr($logicItem, 1, -1)]) && is_array($recData[$Proj->firstEventId][substr($logicItem, 1, -1)])) {
 					header('Content-Type: application/json');
-					echo json_encode($recData[$Proj->firstEventId][substr($logicItem, 1, -1)]);
+					echo json_encode($module->escape($recData[$Proj->firstEventId][substr($logicItem, 1, -1)]));
 					$found = true;
 					break;
 				}

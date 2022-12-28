@@ -765,7 +765,13 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 												// $('[name="'+field+'"]').change();
 											}
 										} else {
-											$('[name="'+field+'"]').val(data);
+											const unescapedData = data
+												.replace(/&amp;/g, "&")
+												.replace(/&lt;/g, "<")
+												.replace(/&gt;/g, ">")
+												.replace(/&quot;/g, "\"")
+												.replace(/&#039;/g, "'")
+											$('[name="'+field+'"]').val(unescapedData);
 											addBranchingField(field, $('[name="'+field+'"]'));
 											// $('[name="'+field+'"]').change();
 										}
@@ -1211,4 +1217,44 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 		return $rightsByPid;
 	}*/
+
+	/**
+	 * Copied from the EM framework.  Can be removed once redcap-version-min can be set to a version that includes this method.
+	 */
+	function escape($value){
+		$type = gettype($value);
+
+		/**
+		 * The unnecessary casting on these first few types exists solely to inform psalm and avoid warnings.
+		 */
+		if($type === 'boolean'){
+			return (bool) $value;
+		}
+		else if($type === 'integer'){
+			return (int) $value;
+		}
+		else if($type === 'double'){
+			return (float) $value;
+		}
+		else if($type === 'array'){
+			$newValue = [];
+			foreach($value as $key=>$subValue){
+				$key = $this->escape($key);
+				$subValue = $this->escape($subValue);
+				$newValue[$key] = $subValue;
+			}
+
+			return $newValue;
+		}
+		else if($type === 'NULL'){
+			return null;
+		}
+		else{
+			/**
+			* Handle strings, resources, and custom objects (via the __toString() method. 
+			* Apart from escaping, this produces that same behavior as if the $value was echoed or appended via the "." operator.
+			*/
+			return htmlspecialchars(''.$value, ENT_QUOTES);
+		}
+	}
 }
