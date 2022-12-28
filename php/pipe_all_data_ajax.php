@@ -29,7 +29,7 @@ foreach ($module->projects['destination']['records_match_fields'] as $rid => $in
 	} elseif (!empty($save_result['errors'])) {
 		$failures++;
 		if (!empty($verbose_failure_logging)) {
-			\REDCap::logEvent("Cross-Project Piping Module", "Verbose Pipe-All piping failure information for record $rid:\n" . implode($save_result['errors'], "\n"));
+			\REDCap::logEvent("Cross-Project Piping Module", "Verbose Pipe-All piping failure information for record $rid:\n" . implode("\n", $save_result['errors']));
 		}
 	}
 }
