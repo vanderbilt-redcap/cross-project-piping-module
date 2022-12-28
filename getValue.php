@@ -94,7 +94,7 @@
 					$choices;
 					foreach ($insecure_choices as $k1 => $v1) {
 						foreach ($v1 as $k2 => $v2) {
-							$choices[db_escape($k1)][db_escape($k2)] = db_escape($v2);
+							$choices[$k1][$k2] = $v2;
 						}
 					}
 					
