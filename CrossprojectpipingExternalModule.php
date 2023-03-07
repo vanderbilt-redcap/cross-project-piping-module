@@ -662,6 +662,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 					var cppAjaxConnections = 0;
 					var cppFoundField = false;
 					var cppProcessing = true;
+//console.log(fields);
 					$.each(fields, function(field,params) {
 						var value = params.params;
 						var nodes = value.split(/\]\[/);
@@ -674,7 +675,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 							if (nodes.length == 2) {
 								remaining = "[" + nodes[1] + "]";
 							} else {
-									remaining = "[" + nodes[1] + "][" + nodes[2] + "]";
+                                remaining = "[" + nodes[1] + "][" + nodes[2] + "]";
 							}
 
 							var match = <?= json_encode($match) ?>;
@@ -696,8 +697,9 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 								cppAjaxConnections++;
 								var ajaxCountLimit = 0;
 								// console.log('++cppAjaxConnections = '+cppAjaxConnections);
-								
-								$.post(url, { thisrecord: '<?= htmlspecialchars($_GET['id'], ENT_QUOTES) ?>', thispid: <?= intval($_GET['pid']) ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
+								//console.log(url);
+								$.post(url, { thisrecord: '<?= htmlspecialchars($_GET['id'], ENT_QUOTES) ?>', thispid: <?= intval($_GET['pid']) ?>, thisinstance: <?= intval($repeat_instance) ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
+                                    //console.log(data);
 									if(data.length && typeof(data) == 'string' && data.indexOf(<?=json_encode(\RCView::tt("dataqueries_352"))?>) >= 0) {
 										if(ajaxCountLimit >= 1000) {
 											return;
@@ -717,7 +719,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 									var tr = $('tr[sq_id='+field+']');
 									var id = lastNode.match(/\([^\s]+\)/);
-									// console.log("Setting "+field+" to "+data);
+									 //console.log("Setting "+field+" to "+data);
 									if (typeof(data) == 'object') {    // checkbox
 										$.each(data, function( index, value ) {
 											var input = $('input:checkbox[code="'+index+'"]', tr);
@@ -776,7 +778,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 											// $('[name="'+field+'"]').change();
 										}
 
-										// console.log("D Setting "+field+" to "+$('[name="'+field+'"]').val());
+										 //console.log("D Setting "+field+" to "+$('[name="'+field+'"]').val());
 										if ($('[name="'+field+'___radio"][value="'+data+'"]').length > 0) {
 											$('[name="'+field+'___radio"][value="'+data+'"]').prop('checked', true);
 											addBranchingField(field, $('[name="'+field+'___radio"][value="'+data+'"]'));
@@ -805,6 +807,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 							}
 						}
 					});
+
 					if(cppFoundField == false) {
 						// Looks like we never found a field. Remove loading overlay.
 						cppProcessing = false;
@@ -990,6 +993,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 				'fields' => $fields,
 				'filterLogic' => "[$match_field] <> ''"
 			];
+
 			$this->projects['source'][$project_index]['source_data'] = \REDCap::getData($params);
 		}
 	}
@@ -1043,7 +1047,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			"$dst_rid" => []
 		];
 		$data_repeatable_to_save = [];
-		
+
 		// for every source project:
 		foreach ($this->projects['source'] as $p_index => $src_project) {
 			// get the destination match field name
@@ -1058,7 +1062,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			// is the source match field in the set of piped fields?
 			$src_match_field = $src_project['source_match_field'];
 			$source_match_field_is_in_pipe_fields = in_array($src_match_field, $src_project['source_fields'], true) !== false;
-			
+
 			// copy pipe values from source records whose match field value matches
 			foreach ($src_project['source_data'] as $src_rid => $src_rec) {
 				// iterate over each event in the source record, add/overwite data for pipe fields along the way
@@ -1071,18 +1075,19 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 					if (empty($dst_event_id)) {
 						continue;
 					}
-					
+
 					// skip this event if the event_id isn't valid (eid is only valid if it has the same name as the name of the event contains the form that contains the destination match field)
 					# Quick-Fix for PHP8 Support
 					if (in_array($eid, (array) $src_project['valid_match_event_ids']) === false) {
 						continue;
 					}
-					
+
 					// if the source record match field doesn't match the destination record match field,
 					// it may be a repeatable record. If it's a repeatable record, check if any of the
 					// instances contains the destination field that match the source field. If not, continue
 					$repeatable = false;
 					$instances = [];
+
 					if ($record_match_value != $field_data[$src_match_field]) {
 						$equal = false;
 						foreach($record_match_value[$dst_event_id] as $form_name => $form_result) {
@@ -1098,7 +1103,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 						}
 						$repeatable = true;
 					}
-					
+
 					// get matching record field value
 					$params = [
 						'project_id' => $this->projects['destination']['project_id'],
@@ -1107,6 +1112,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 						'records' => $dst_rid,
 						'fields' => $src_project['dest_fields']
 					];
+
 					$record_details = \REDCap::getData($params);
 
 					foreach ($field_data as $field_name => $field_value) {
@@ -1170,7 +1176,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 				}
 			}
 		}
-		
+
 		if (!empty($data_to_save[$dst_rid])) {
 			$result = \REDCap::saveData('array', $data_to_save);
 			return $result;
