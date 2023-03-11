@@ -8,7 +8,7 @@ CrossProjectPipingModule.ajax_complete = function(data, status, xhr) {
 	$("button#pipe_all_records").attr('disabled', false);
 	
 	if (status == 'success' && data.responseJSON && data.responseJSON['success'] == true) {
-		window.location.reload();
+		//window.location.reload();
 	} else {
 		if (data.responseJSON && data.responseJSON['error']) {
 			alert(data.responseJSON['error']);
