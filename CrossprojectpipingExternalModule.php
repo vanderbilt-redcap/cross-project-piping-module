@@ -1131,14 +1131,14 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
             }
 
             if (!empty($dst_name)) {
-                $this->updateDestinationData($currentData,$destProj,$dst_name,$field_value,$dst_rid,$dst_event_id,$repeat_instance);
+                $currentData = $this->updateDestinationData($currentData,$destProj,$dst_name,$field_value,$dst_rid,$dst_event_id,$repeat_instance);
             }
         }
 
         return $currentData;
     }
 
-    function updateDestinationData(&$destData,\Project $destProject, $destFieldName, $srcFieldValue, $destRecord, $destEvent,$destRepeat = 1) {
+    function updateDestinationData($destData,\Project $destProject, $destFieldName, $srcFieldValue, $destRecord, $destEvent,$destRepeat = 1) {
         $destMeta = $destProject->metadata;
         $destEventForms = $destProject->eventsForms[$destEvent];
 
@@ -1162,6 +1162,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
                 $destData[$destRecord][$destEvent][$destFieldName] = $srcFieldValue;
             }
         }
+        return $destData;
     }
 	
 	function getProjectRecordIDs($project_id, $filter_logic = null) {
