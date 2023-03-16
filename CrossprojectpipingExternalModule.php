@@ -1047,111 +1047,63 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			"$dst_rid" => []
 		];
 		$data_repeatable_to_save = [];
-        $returnarray = array();
+        $returnarray = $resultData = array();
 		// for every source project:
 		foreach ($this->projects['source'] as $p_index => $src_project) {
 			// get the destination match field name
 			$dest_match_field = $src_project['dest_match_field'];
-			$record_match_value = $record_match_info[$dest_match_field];
-			
-			// if destination match field empty, there may be a repeatable instrument
-			if (empty($record_match_value)) {
-				$record_match_value = $record_match_info;
-			}
 
 			// is the source match field in the set of piped fields?
 			$src_match_field = $src_project['source_match_field'];
 			$source_match_field_is_in_pipe_fields = in_array($src_match_field, $src_project['source_fields'], true) !== false;
 
+            //$dataToSave = $this->transferRecordData($src_project['source_data']);
 			// copy pipe values from source records whose match field value matches
 			foreach ($src_project['source_data'] as $src_rid => $src_rec) {
 				// iterate over each event in the source record, add/overwite data for pipe fields along the way
 				foreach ($src_rec as $eid => $field_data) {
-                    $returnarray['data-pull'] = $field_data;
                     if ($eid == "repeat_instances") {
                         foreach ($field_data as $ieid => $formData) {
                             foreach ($formData as $formName => $instanceData) {
                                 foreach ($instanceData as $iNum => $subData) {
-                                    $resultData = $this->processDataTransfer($dst_rid,$src_project,$ieid,$subData,$record_match_value,$src_match_field,$dest_match_field,$source_match_field_is_in_pipe_fields);
-                                    $data_to_save = array_merge($data_to_save,$resultData['data']);
-                                    $data_repeatable_to_save = array_merge($data_repeatable_to_save,$resultData['repeat']);
+                                    $resultData = $this->processDataTransfer($resultData,$dst_rid,$src_project,$ieid,$subData,$src_match_field,$dest_match_field,$source_match_field_is_in_pipe_fields,$iNum);
                                 }
                             }
                         }
                     }
                     else {
-                        $resultData = $this->processDataTransfer($dst_rid,$src_project,$eid,$field_data,$record_match_value,$src_match_field,$dest_match_field,$source_match_field_is_in_pipe_fields);
-                        $data_to_save = array_merge($data_to_save,$resultData['data']);
-                        $data_repeatable_to_save = array_merge($data_repeatable_to_save,$resultData['repeat']);
+                        $resultData = $this->processDataTransfer($resultData,$dst_rid,$src_project,$eid,$field_data,$src_match_field,$dest_match_field,$source_match_field_is_in_pipe_fields);
                     }
 				}
 			}
 		}
-        //return $returnarray;
-		if (!empty($data_to_save[$dst_rid])) {
-			$result = \REDCap::saveData('array', $data_to_save);
+
+		if (!empty($resultData[$dst_rid])) {
+			$result = \REDCap::saveData('array', $resultData);
 			//return $result;
+            $returnarray['data-push'] = $result;
 		}
 
-		if (!empty($data_repeatable_to_save)) {
-			$repeatable_result = \REDCap::saveData('json', json_encode($data_repeatable_to_save), 'normal');
-			//return $repeatable_result;
-		}
+        return $returnarray;
 	}
 
-    function processDataTransfer($dst_rid,$src_project,$eid,$field_data,$record_match_value,$src_match_field,$dest_match_field,$source_match_field_is_in_pipe_fields) {
-        $returnarray = array();
+    function processDataTransfer($currentData,$dst_rid,$src_project,$eid,$field_data,$src_match_field,$dest_match_field,$source_match_field_is_in_pipe_fields,$repeat_instance = "") {
         // if this eid corresponds to a destination project event.. copy data to save to destination record
         $src_event_name = $src_project['events'][$eid];
         $dst_event_id = array_search($src_event_name, $this->projects['destination']['events'], true);
         // skip this event if a matching event name wasn't found in the destination project
-        $returnarray['event_list'][$eid] = $dst_event_id;
         if ($dst_event_id === false) {
-            $returnarray['errorlist'][] = "No found dest event";
-            return $returnarray;
+            return $currentData;
         }
 
         // skip this event if the event_id isn't valid (eid is only valid if it has the same name as the name of the event contains the form that contains the destination match field)
         # Quick-Fix for PHP8 Support
         if (in_array($eid, (array) $src_project['valid_match_event_ids']) === false) {
-            $returnarray['errorlist'][] = "Event not valid";
-            return $returnarray;
+            return $currentData;
         }
 
-        // if the source record match field doesn't match the destination record match field,
-        // it may be a repeatable record. If it's a repeatable record, check if any of the
-        // instances contains the destination field that match the source field. If not, continue
-        $repeatable = false;
-        $instances = [];
-
-        if ($record_match_value != $field_data[$src_match_field]) {
-            $equal = false;
-
-            foreach($record_match_value[$dst_event_id] as $form_name => $form_result) {
-                foreach($form_result as $instance => $instance_result) {
-                    if ($instance_result[$dest_match_field] == $field_data[$src_match_field]) {
-                        $equal = true;
-                        array_push($instances, $instance);
-                    }
-                }
-            }
-            if ($equal === false) {
-                return $returnarray;
-            }
-            $repeatable = true;
-        }
-
-        // get matching record field value
-        $params = [
-            'project_id' => $this->projects['destination']['project_id'],
-            'return_format' => 'array',
-            'events' => $dst_event_id,
-            'records' => $dst_rid,
-            'fields' => $src_project['dest_fields']
-        ];
-
-        $record_details = \REDCap::getData($params);
-        $data_repeatable_to_save = $data_to_save = array();
+        // create an instance of destination project
+        $destProj = new \Project($this->projects['destination']['projectId']);
 
         foreach ($field_data as $field_name => $field_value) {
             // skip this field if it's the match field and match field isn't in the set of fields to be piped
@@ -1171,47 +1123,45 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
             $form_name = $src_project['dest_forms_by_field_name'][$dst_name];
 
             if (intval($this->formStatuses[$dst_rid][$dst_event_id][$form_name . '_complete']) > $this->pipe_on_status) {
-                return $returnarray;
+                continue;
             }
-
             // skip if this field isn't in an 'active' form
             if (!empty($this->active_forms) && !in_array($form_name, $this->active_forms)) {
-                return $returnarray;
+                continue;
             }
 
             if (!empty($dst_name)) {
-                if ($repeatable === false) {
-                    $data_to_save[$dst_rid][$dst_event_id][$dst_name] = $field_value;
-                } else {
-                    // create an instance of destination project
-                    $destProj = new \Project($this->projects['destination']['projectId']);
-                    // check to see if destination project has repeating forms
-                    $hasRepeatingForms = $destProj->hasRepeatingForms();
-                    foreach($instances as $instance) {
-                        // get destination field value from record match info
-                        $dest_field_value = $hasRepeatingForms === true ?
-                            $record_details[$dst_rid]["repeat_instances"][$dst_event_id][$form_name][$instance][$dst_name] :
-                            $record_details[$dst_rid]["repeat_instances"][$dst_event_id][""][$instance][$dst_name];
-                        // if destination field already has a value that matches source value,
-                        // we'll skip it - since updating will have no change to the value
-                        if ($dest_field_value === $field_value) {
-                            continue;
-                        }
-                        $json_data = '{"record_id":"' . $dst_rid .
-                            '","redcap_event_name":"'. $this->projects['destination']['event_details'][$dst_event_id]['unique_name'];
-                        // if destination project has repeating form(s), add `redcap_repeat_instrument` field to json data
-                        if ($hasRepeatingForms === true) {
-                            $json_data = $json_data . '","redcap_repeat_instrument":"'. $form_name;
-                        }
-                        $json_data = $json_data .
-                            '","redcap_repeat_instance":'. $instance .
-                            ',"' . $dst_name . '":"' . $field_value . '"}';
-                        array_push($data_repeatable_to_save, json_decode($json_data));
-                    }
-                }
+                $this->updateDestinationData($currentData,$destProj,$dst_name,$field_value,$dst_rid,$dst_event_id,$repeat_instance);
             }
         }
-        return array('data'=>$data_to_save,'repeat'=>$data_repeatable_to_save);
+
+        return $currentData;
+    }
+
+    function updateDestinationData(&$destData,\Project $destProject, $destFieldName, $srcFieldValue, $destRecord, $destEvent,$destRepeat = 1) {
+        $destMeta = $destProject->metadata;
+        $destEventForms = $destProject->eventsForms[$destEvent];
+
+        $destInstrument = $destMeta[$destFieldName]['form_name'];
+        $destRecordField = $destProject->table_pk;
+        $destInstrumentRepeats = $destProject->isRepeatingForm($destEvent, $destInstrument);
+        $destEventRepeats = $destProject->isRepeatingEvent($destEvent);
+
+        if (in_array($destInstrument,$destEventForms)) {
+            if ($destInstrumentRepeats) {
+                $destData[$destRecord][$destEvent][$destRecordField] = $destRecord;
+                //$destData[$destRecord][$destEvent]['redcap_repeat_instrument'] = "";
+                //$destData[$destRecord][$destEvent]['redcap_repeat_instance'] = $destRepeat;
+                $destData[$destRecord]['repeat_instances'][$destEvent][$destInstrument][$destRepeat][$destFieldName] = $srcFieldValue;
+            } elseif ($destEventRepeats) {
+                $destData[$destRecord][$destEvent][$destRecordField] = $destRecord;
+                //$destData[$destRecord][$destEvent]['redcap_repeat_instrument'] = "";
+                //$destData[$destRecord][$destEvent]['redcap_repeat_instance'] = $destRepeat;
+                $destData[$destRecord]['repeat_instances'][$destEvent][''][$destRepeat][$destFieldName] = $srcFieldValue;
+            } else {
+                $destData[$destRecord][$destEvent][$destFieldName] = $srcFieldValue;
+            }
+        }
     }
 	
 	function getProjectRecordIDs($project_id, $filter_logic = null) {
