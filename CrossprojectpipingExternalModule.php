@@ -1048,6 +1048,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		];
 		$data_repeatable_to_save = [];
         $returnarray = $resultData = array();
+        
 		// for every source project:
 		foreach ($this->projects['source'] as $p_index => $src_project) {
 			// get the destination match field name
@@ -1066,12 +1067,14 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
                         foreach ($field_data as $ieid => $formData) {
                             foreach ($formData as $formName => $instanceData) {
                                 foreach ($instanceData as $iNum => $subData) {
+                                    if ($subData[$src_match_field] != $record_match_info[$dest_match_field]) continue;
                                     $resultData = $this->processDataTransfer($resultData,$dst_rid,$src_project,$ieid,$subData,$src_match_field,$dest_match_field,$source_match_field_is_in_pipe_fields,$iNum);
                                 }
                             }
                         }
                     }
                     else {
+                        if ($field_data[$src_match_field] != $record_match_info[$dest_match_field]) continue;
                         $resultData = $this->processDataTransfer($resultData,$dst_rid,$src_project,$eid,$field_data,$src_match_field,$dest_match_field,$source_match_field_is_in_pipe_fields);
                     }
 				}
@@ -1082,6 +1085,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			$result = \REDCap::saveData('array', $resultData);
 			//return $result;
             $returnarray['data-push'] = $result;
+            $returnarray['data-list'][$dst_rid] = $resultData;
 		}
 
         return $returnarray;
