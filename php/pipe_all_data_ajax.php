@@ -49,7 +49,7 @@ $changed_records = $pipe_attempts - $no_change_records;
 if (empty($errors)) {
 	$response['success'] = true;
 } else {
-	$response['error'] = implode('. ', $errors);
+	$response['error'] = implode('. ', $module->escape($errors));
 }
 
 echo json_encode($response);
