@@ -22,9 +22,15 @@ namespace Vanderbilt\CrossprojectpipingExternalModule;
 **/
 
 // Set the base hook folder to be one level higher than this file
-define('HOOK_PATH_ROOT', dirname(__DIR__).DS);
-define('HOOK_PATH_FRAMEWORK', dirname(__FILE__).DS);
-define('HOOK_PATH_SERVER', HOOK_PATH_ROOT . "server" . DS);
+if (!defined("HOOK_PATH_ROOT")) {
+    define('HOOK_PATH_ROOT', dirname(__DIR__).DS);
+}
+if (!defined("HOOK_PATH_FRAMEWORK")) {
+    define('HOOK_PATH_FRAMEWORK', dirname(__FILE__) . DS);
+}
+if (!defined("HOOK_PATH_SERVER")) {
+    define('HOOK_PATH_SERVER', HOOK_PATH_ROOT . "server" . DS);
+}
 
 // In order to access these configuration parameters inside the hook function, they must be global
 global $hook_debug_default, $hook_debug_projects;	//global $hook_functions, $hook_fields;
