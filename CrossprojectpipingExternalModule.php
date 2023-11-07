@@ -186,7 +186,8 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		}
 		else {
 			## Wipe data so it can be re-created from scratch
-			$sql = "DELETE FROM redcap_data
+			$table = $this->getDataTable();
+			$sql = "DELETE FROM $table
 					WHERE project_id = '".db_escape($projectId)."'";
 
 			$q = $this->query($sql);
@@ -200,6 +201,10 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		}
 
 		return $projectId;
+	}
+
+	function getDataTable(){
+		return method_exists('\REDCap', 'getDataTable') ? \REDCap::getDataTable($project_id) : "redcap_data"; 
 	}
 
 	function setTestMetadataAndData($projectId,$metadata,$data) {
@@ -341,7 +346,8 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 		// If this instrument's status is currently HIGHER than 'pipe-on-status' config value then DO NOT pipe data
 		$fieldName = db_real_escape_string($instrument).'_complete';
-		$sql = "SELECT * FROM redcap_data WHERE project_id = {$project_id} AND record = '{$record}' AND event_id = {$event_id} AND field_name = '{$fieldName}'";
+		$table = $this->getDataTable();
+		$sql = "SELECT * FROM $table WHERE project_id = {$project_id} AND record = '{$record}' AND event_id = {$event_id} AND field_name = '{$fieldName}'";
 		if($repeat_instance >= 2) {
 			$sql .= " AND instance = ".$repeat_instance;
 		} else {
