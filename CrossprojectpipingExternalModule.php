@@ -47,6 +47,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		 * It used to work on surveys only for users also logged into REDCap,
 		 * but this created confusion as to why it didn't work for anyone on those surveys.
 		 * We considered enabling piping for NOAUTH users, but decided against it for security reasons.
+		 * For details, see https://redcap.vanderbilt.edu/community/post.php?id=99013
 		 */
 	}
 
