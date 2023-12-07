@@ -42,8 +42,13 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 	}
 
 	function redcap_survey_page_top($project_id, $record, $instrument, $event_id, $group_id, $survey_hash, $response_id, $repeat_instance) {
-		$this->hideButton = true;
-		$this->processRecord($project_id, $record, $instrument, $event_id, $repeat_instance);
+		/**
+		 * Piping on surveys is intentionally disabled.
+		 * It used to work on surveys only for users also logged into REDCap,
+		 * but this created confusion as to why it didn't work for anyone on those surveys.
+		 * We considered enabling piping for NOAUTH users, but decided against it for security reasons.
+		 * For details, see https://redcap.vanderbilt.edu/community/post.php?id=99013
+		 */
 	}
 
 	function redcap_module_save_configuration($project_id) {
