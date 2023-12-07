@@ -2,7 +2,7 @@
 
 # Cross Project Piping - External Module
 <h2 style='color: #33B9FF;'>Configure Cross Project Piping</h2>
-This module must be enabled on the DESTINATION project. Once enabled the configuration is done with in the
+This module must be enabled on the DESTINATION project, and is intentionally disabled on surveys for security reasons. Once enabled the configuration is done with in the
 external module tab on the project.
 
 ![The module's 'Configure' button can be found under the 'Currently Enabled Modules' header in the project's External Modules page](/docs/readme_img_1.png)
