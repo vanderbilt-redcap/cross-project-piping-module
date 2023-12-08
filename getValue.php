@@ -45,13 +45,6 @@
 		$recordId = key($filterData);
 	}
 
-	$data = \Records::getData($_POST['otherpid'], 'array', array($recordId));
-
-	if(empty($data)) {
-
-		return;
-	}
-
 	$logic = $_POST['otherlogic'];
 	$nodes = preg_split("/\]\[/", $logic);
 	for ($i=0; $i < count($nodes); $i++) {
@@ -63,6 +56,12 @@
 	} else {
 		$fieldName = $nodes[1];
 	}
+
+	$data = \Records::getData($_POST['otherpid'], 'array', array($recordId));
+	if(empty($data)) {
+		return;
+	}
+
 	if (preg_match("/\*/", $logic)) {
 		$fieldNameRegExFull = "/^".preg_replace("/\*/", ".*", $fieldName)."$/";
 		$fieldNameRegExMiddle = "/".preg_replace("/\*/", ".*", $fieldName)."/";
