@@ -1266,7 +1266,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 	function verifyPermissions($destinationPid, $destinationMatchField, $sourcePid, $sourceMatchField, $sourceDataField){
 		if(!is_array($this->framework->getUser()->getRights([$destinationPid]))){
-			$this->dieWithHTTPError("You do not have permission to project: $destinationPid");
+			$this->dieWithHTTPError("You do not have permission to this project!");
 		};
 
 		$match = false;
