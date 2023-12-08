@@ -11,16 +11,8 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 	public $pipingMode;
 	public $pipeOnStatus;
 	public $modSettings;
-	public $hideButton;
+	public $hideButton = false;
 
-	function __construct() {
-		parent::__construct();
-		$this->hideButton = false;
-		if(defined("PROJECT_ID")) {
-			$this->modSettings = $this->getPipingSettings(PROJECT_ID);
-		}
-	}
-	
 	function redcap_every_page_before_render($project_id) {
 		$user_is_at_record_status_dashboard = $_SERVER['SCRIPT_NAME'] == APP_PATH_WEBROOT . "DataEntry/record_status_dashboard.php";
 		$pipe_all_records_button_configured = $this->getProjectSetting('piping-all-records-button');
@@ -47,6 +39,9 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		 * It used to work on surveys only for users also logged into REDCap,
 		 * but this created confusion as to why it didn't work for anyone on those surveys.
 		 * We considered enabling piping for NOAUTH users, but decided against it for security reasons.
+		 * This hook could have been removed, but was left in place in hopes that any
+		 * developer considering adding support for surveys would quickly see this comment,
+		 * and be made aware of concerns & past discussion.
 		 * For details, see https://redcap.vanderbilt.edu/community/post.php?id=99013
 		 */
 	}
@@ -324,6 +319,10 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 	}
 
 	function processRecord($project_id, $record, $instrument, $event_id, $repeat_instance) {
+		if(defined("PROJECT_ID")) {
+			$this->modSettings = $this->getPipingSettings(PROJECT_ID);
+		}
+
 		// Do not run on new records with no record ID
 		if(empty($record)) {
 			return;
@@ -1253,6 +1252,43 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			* Apart from escaping, this produces that same behavior as if the $value was echoed or appended via the "." operator.
 			*/
 			return htmlspecialchars(''.$value, ENT_QUOTES);
+		}
+	}
+
+	function dieWithHTTPError($message){
+		http_response_code(403);
+		die($message);
+	}
+
+	function verifyPermissions($destinationPid, $destinationMatchField, $sourcePid, $sourceMatchField, $sourceDataField){
+		if(!is_array($this->framework->getUser()->getRights([$destinationPid]))){
+			$this->dieWithHTTPError("You do not have permission to this project!");
+		};
+
+		$match = false;
+		foreach($this->framework->getSubSettings('pipe-projects') as $project){
+			$configuredSourceMatchField = $project['field-match-source'] ?? '';
+
+			if(
+				$project['project-id'] !== $sourcePid
+				||
+				trim($project['field-match']) !== trim($destinationMatchField)
+				||
+				$configuredSourceMatchField !== $sourceMatchField
+			){
+				continue;
+			}
+
+			foreach($project['project-fields'] as $field){
+				$configuredSourceField = $field['data-source-field'] ?? $field['data-destination-field'] ?? null;
+				if($configuredSourceField === $sourceDataField){
+					$match = true;
+				}
+			}
+		}
+
+		if(!$match){
+			$this->dieWithHTTPError("You do not have access to pipe this field!");
 		}
 	}
 }

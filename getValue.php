@@ -6,14 +6,31 @@
 
 	require_once APP_PATH_DOCROOT.'Classes/LogicTester.php';
 
-	if($_POST['otherpid'] != $_POST['thispid']) {
-		\REDCap::allowProjects(array($_POST['otherpid'], $_POST['thispid']));
-	}
-
-	$thisjson = \REDCap::getData($_POST['thispid'], 'json', array($_POST['thisrecord']), array($_POST['thismatch']));
 	$thismatch = trim($_POST['thismatch']);
 	$thismatch = preg_replace("/^[\'\"]/", "", $thismatch);
 	$thismatch = preg_replace("/[\'\"]$/", "", $thismatch);
+
+	$logic = $_POST['otherlogic'];
+	$nodes = preg_split("/\]\[/", $logic);
+	for ($i=0; $i < count($nodes); $i++) {
+		$nodes[$i] = preg_replace("/^\[/", "", $nodes[$i]);
+		$nodes[$i] = preg_replace("/\]$/", "",$nodes[$i]);
+	}
+	if (count($nodes) == 1) {
+		$fieldName = $nodes[0];
+	} else {
+		$fieldName = $nodes[1];
+	}
+
+	$module->verifyPermissions(
+		$_POST['thispid'],
+		$thismatch,
+		$_POST['otherpid'],
+		$_POST['matchsource'],
+		$fieldName,
+	);
+
+	$thisjson = \REDCap::getData($_POST['thispid'], 'json', array($_POST['thisrecord']), array($_POST['thismatch']));
 	$thisdata = json_decode($thisjson, true);
 	$matchRecord = "";
 	foreach ($thisdata as $line) {
@@ -43,23 +60,10 @@
 	}
 
 	$data = \Records::getData($_POST['otherpid'], 'array', array($recordId));
-
 	if(empty($data)) {
-
 		return;
 	}
 
-	$logic = $_POST['otherlogic'];
-	$nodes = preg_split("/\]\[/", $logic);
-	for ($i=0; $i < count($nodes); $i++) {
-		$nodes[$i] = preg_replace("/^\[/", "", $nodes[$i]);
-		$nodes[$i] = preg_replace("/\]$/", "",$nodes[$i]);
-	}
-	if (count($nodes) == 1) {
-		$fieldName = $nodes[0];
-	} else {
-		$fieldName = $nodes[1];
-	}
 	if (preg_match("/\*/", $logic)) {
 		$fieldNameRegExFull = "/^".preg_replace("/\*/", ".*", $fieldName)."$/";
 		$fieldNameRegExMiddle = "/".preg_replace("/\*/", ".*", $fieldName)."/";
