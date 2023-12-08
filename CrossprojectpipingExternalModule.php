@@ -49,7 +49,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		 * We considered enabling piping for NOAUTH users, but decided against it for security reasons.
 		 * This hook could have been removed, but was left in place in hopes that any
 		 * developer considering adding support for surveys would quickly see this comment,
-		 * and be made become aware of concerns & past discussion.
+		 * and be made aware of concerns & past discussion.
 		 * For details, see https://redcap.vanderbilt.edu/community/post.php?id=99013
 		 */
 	}
