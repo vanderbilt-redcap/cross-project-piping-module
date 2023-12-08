@@ -6,6 +6,10 @@
 
 	require_once APP_PATH_DOCROOT.'Classes/LogicTester.php';
 
+	$thismatch = trim($_POST['thismatch']);
+	$thismatch = preg_replace("/^[\'\"]/", "", $thismatch);
+	$thismatch = preg_replace("/[\'\"]$/", "", $thismatch);
+
 	$logic = $_POST['otherlogic'];
 	$nodes = preg_split("/\]\[/", $logic);
 	for ($i=0; $i < count($nodes); $i++) {
@@ -23,12 +27,10 @@
 		$thismatch,
 		$_POST['otherpid'],
 		$_POST['matchsource'],
+		$fieldName,
 	);
 
 	$thisjson = \REDCap::getData($_POST['thispid'], 'json', array($_POST['thisrecord']), array($_POST['thismatch']));
-	$thismatch = trim($_POST['thismatch']);
-	$thismatch = preg_replace("/^[\'\"]/", "", $thismatch);
-	$thismatch = preg_replace("/[\'\"]$/", "", $thismatch);
 	$thisdata = json_decode($thisjson, true);
 	$matchRecord = "";
 	foreach ($thisdata as $line) {

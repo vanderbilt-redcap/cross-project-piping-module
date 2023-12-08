@@ -1259,9 +1259,40 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		}
 	}
 
-	function verifyPermissions($destinationPid, $destinationMatchField, $sourcePid, $sourceMatchField){
+	function dieWithHTTPError($message){
+		http_response_code(403);
+		die($message);
+	}
+
+	function verifyPermissions($destinationPid, $destinationMatchField, $sourcePid, $sourceMatchField, $sourceDataField){
 		if(!is_array($this->framework->getUser()->getRights([$destinationPid]))){
-			die("You do not have permission to project: $destinationPid");
+			$this->dieWithHTTPError("You do not have permission to project: $destinationPid");
 		};
+
+		$match = false;
+		foreach($this->framework->getSubSettings('pipe-projects') as $project){
+			$configuredSourceMatchField = $project['field-match-source'] ?? '';
+
+			if(
+				$project['project-id'] !== $sourcePid
+				||
+				trim($project['field-match']) !== trim($destinationMatchField)
+				||
+				$configuredSourceMatchField !== $sourceMatchField
+			){
+				continue;
+			}
+
+			foreach($project['project-fields'] as $field){
+				$configuredSourceField = $field['data-source-field'] ?? $field['data-destination-field'] ?? null;
+				if($configuredSourceField === $sourceDataField){
+					$match = true;
+				}
+			}
+		}
+
+		if(!$match){
+			$this->dieWithHTTPError("You do not have access to pipe this field!");
+		}
 	}
 }
