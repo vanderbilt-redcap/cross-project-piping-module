@@ -13,13 +13,6 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 	public $modSettings;
 	public $hideButton = false;
 
-	function __construct() {
-		parent::__construct();
-		if(defined("PROJECT_ID")) {
-			$this->modSettings = $this->getPipingSettings(PROJECT_ID);
-		}
-	}
-	
 	function redcap_every_page_before_render($project_id) {
 		$user_is_at_record_status_dashboard = $_SERVER['SCRIPT_NAME'] == APP_PATH_WEBROOT . "DataEntry/record_status_dashboard.php";
 		$pipe_all_records_button_configured = $this->getProjectSetting('piping-all-records-button');
@@ -326,6 +319,10 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 	}
 
 	function processRecord($project_id, $record, $instrument, $event_id, $repeat_instance) {
+		if(defined("PROJECT_ID")) {
+			$this->modSettings = $this->getPipingSettings(PROJECT_ID);
+		}
+
 		// Do not run on new records with no record ID
 		if(empty($record)) {
 			return;
