@@ -11,11 +11,10 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 	public $pipingMode;
 	public $pipeOnStatus;
 	public $modSettings;
-	public $hideButton;
+	public $hideButton = false;
 
 	function __construct() {
 		parent::__construct();
-		$this->hideButton = false;
 		if(defined("PROJECT_ID")) {
 			$this->modSettings = $this->getPipingSettings(PROJECT_ID);
 		}
