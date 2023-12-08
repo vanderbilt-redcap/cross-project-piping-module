@@ -1258,4 +1258,10 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 			return htmlspecialchars(''.$value, ENT_QUOTES);
 		}
 	}
+
+	function verifyPermissions($destinationPid, $destinationMatchField, $sourcePid, $sourceMatchField){
+		if(!is_array($this->framework->getUser()->getRights([$destinationPid]))){
+			die("You do not have permission to project: $destinationPid");
+		};
+	}
 }

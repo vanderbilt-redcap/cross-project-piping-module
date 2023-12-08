@@ -6,9 +6,12 @@
 
 	require_once APP_PATH_DOCROOT.'Classes/LogicTester.php';
 
-	if($_POST['otherpid'] != $_POST['thispid']) {
-		\REDCap::allowProjects(array($_POST['otherpid'], $_POST['thispid']));
-	}
+	$module->verifyPermissions(
+		$_POST['thispid'],
+		$thismatch,
+		$_POST['otherpid'],
+		$_POST['matchsource'],
+	);
 
 	$thisjson = \REDCap::getData($_POST['thispid'], 'json', array($_POST['thisrecord']), array($_POST['thismatch']));
 	$thismatch = trim($_POST['thismatch']);
