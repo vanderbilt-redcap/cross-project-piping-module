@@ -6,6 +6,18 @@
 
 	require_once APP_PATH_DOCROOT.'Classes/LogicTester.php';
 
+	$logic = $_POST['otherlogic'];
+	$nodes = preg_split("/\]\[/", $logic);
+	for ($i=0; $i < count($nodes); $i++) {
+		$nodes[$i] = preg_replace("/^\[/", "", $nodes[$i]);
+		$nodes[$i] = preg_replace("/\]$/", "",$nodes[$i]);
+	}
+	if (count($nodes) == 1) {
+		$fieldName = $nodes[0];
+	} else {
+		$fieldName = $nodes[1];
+	}
+
 	$module->verifyPermissions(
 		$_POST['thispid'],
 		$thismatch,
@@ -43,18 +55,6 @@
 
 		reset($filterData);
 		$recordId = key($filterData);
-	}
-
-	$logic = $_POST['otherlogic'];
-	$nodes = preg_split("/\]\[/", $logic);
-	for ($i=0; $i < count($nodes); $i++) {
-		$nodes[$i] = preg_replace("/^\[/", "", $nodes[$i]);
-		$nodes[$i] = preg_replace("/\]$/", "",$nodes[$i]);
-	}
-	if (count($nodes) == 1) {
-		$fieldName = $nodes[0];
-	} else {
-		$fieldName = $nodes[1];
 	}
 
 	$data = \Records::getData($_POST['otherpid'], 'array', array($recordId));
