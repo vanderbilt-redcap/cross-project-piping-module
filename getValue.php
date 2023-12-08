@@ -11,6 +11,9 @@
 	$thismatch = preg_replace("/[\'\"]$/", "", $thismatch);
 
 	$logic = $_POST['otherlogic'];
+	if (!$logic) {
+		return;
+	}
 	$nodes = preg_split("/\]\[/", $logic);
 	for ($i=0; $i < count($nodes); $i++) {
 		$nodes[$i] = preg_replace("/^\[/", "", $nodes[$i]);
@@ -18,7 +21,16 @@
 	}
 	if (count($nodes) == 1) {
 		$fieldName = $nodes[0];
-	} else {
+	} else if (count($nodes) == 2) {
+		if (is_numeric($nodes[1])) {
+			# [field-name][instance]
+			$fieldName = $nodes[0];
+		} else {
+			# [event-id][field-name]
+			$fieldName = $nodes[1];
+		}
+	} else if (count($nodes) == 3) {
+		# [event-id][field-name][instance]
 		$fieldName = $nodes[1];
 	}
 
