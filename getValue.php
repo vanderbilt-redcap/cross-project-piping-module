@@ -11,9 +11,6 @@
 	$thismatch = preg_replace("/[\'\"]$/", "", $thismatch);
 
 	$logic = $_POST['otherlogic'];
-	if (!$logic) {
-		return;
-	}
 	$nodes = preg_split("/\]\[/", $logic);
 	for ($i=0; $i < count($nodes); $i++) {
 		$nodes[$i] = preg_replace("/^\[/", "", $nodes[$i]);
