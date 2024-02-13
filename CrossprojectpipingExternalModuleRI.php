@@ -281,7 +281,7 @@ class CrossprojectpipingExternalModuleRI extends AbstractExternalModule
 		$keys = $this->getKeysFromConfig($config);
 		$subSettings = [];
 		$rawSettings = ExternalModules::getProjectSettingsAsArray([$this->PREFIX], $project_id);
-		$subSettingCount = count($rawSettings[$keys[0]['key']]['value']);
+		$subSettingCount = count($rawSettings[$keys[0]['key']]['value'] ?? []);
 		$this->pipingMode = (isset($rawSettings['piping-mode']['value'])) ? $rawSettings['piping-mode']['value'] : 0 ;
 		$this->pipeOnStatus = (isset($rawSettings['pipe-on-status']['value'])) ? $rawSettings['pipe-on-status']['value'] : 0 ;
 		for($i=0; $i<$subSettingCount; $i++){
