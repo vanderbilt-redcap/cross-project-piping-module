@@ -430,7 +430,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 				$fieldNames = array($fieldName);
 			}
 			foreach ($fieldNames as $fieldName) {
-				if ($metadata[$fieldName] && $metadata[$fieldName]["select_choices_or_calculations"]) {
+				if (is_array($metadata) && is_array($metadata[$fieldName]) && $metadata[$fieldName]["select_choices_or_calculations"]) {
 					$choices = preg_split("/\|\s*/", $metadata[$fieldName]["select_choices_or_calculations"]);
 					$newChoices = array();
 					for ($i=0; $i < count($choices); $i++) {
