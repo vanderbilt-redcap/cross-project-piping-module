@@ -50,13 +50,21 @@
 	} else {
 		$matchSource = (empty($matchSource)) ? $thismatch : $matchSource ;
 		$filterData = \REDCap::getData($_POST['otherpid'], 'array', null, null, null, null, false, false, false, "([$matchSource] = '$matchRecord')");
-		if(count($filterData) != 1){
-			// Either there were no matches or multiple matches.  Either way, we want to return without echo-ing any values.
-			return;
-		}
 
-		reset($filterData);
-		$recordId = key($filterData);
+		if (count($filterData) != 1) {
+			$useLatestRecordIdSetting = $module->getProjectSetting('use-latest-record-id');
+			if (!is_null($useLatestRecordIdSetting) && isset($useLatestRecordIdSetting[0]) && $useLatestRecordIdSetting[0] === true) {
+				// get the largest record ID
+				ksort($filterData);
+				$recordId = array_key_last($filterData);
+			} else {
+				// Either there were no matches or multiple matches.  Either way, we want to return without echo-ing any values.
+				return;
+			}
+		} else {
+			reset($filterData);
+			$recordId = key($filterData);
+		}
 	}
 
 	$data = \Records::getData($_POST['otherpid'], 'array', array($recordId));
