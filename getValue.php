@@ -54,9 +54,9 @@
 		if (count($filterData) != 1) {
 			$useLatestRecordIdSetting = $module->getProjectSetting('use-latest-record-id');
 			if (!is_null($useLatestRecordIdSetting) && isset($useLatestRecordIdSetting[0]) && $useLatestRecordIdSetting[0] === true) {
-				// get the largest record ID
-				ksort($filterData);
-				$recordId = array_key_last($filterData);
+				$recordKeys = array_keys($filterData);
+				$records = \Records::getRecordList($_POST['otherpid'], [], false, false, null, null, 0, $recordKeys);
+				$recordId = end($records);
 			} else {
 				// Either there were no matches or multiple matches.  Either way, we want to return without echo-ing any values.
 				return;
