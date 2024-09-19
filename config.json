@@ -68,7 +68,7 @@
 				},
 				{
 					"key": "use-latest-record-id",
-					"name": "If multiple Records for Unique Match Field, use the newest Record Id? (only works if Record Names are auto-incrementing integers)",
+					"name": "If multiple Records for Unique Match Field, use the latest Record Id?",
 					"required": false,
 					"type": "checkbox",
 					"repeatable": false
