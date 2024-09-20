@@ -3,8 +3,9 @@
 
 	use ExternalModules\AbstractExternalModule;
 	use ExternalModules\ExternalModules;
+use Records;
 
-	require_once APP_PATH_DOCROOT.'Classes/LogicTester.php';
+require_once APP_PATH_DOCROOT.'Classes/LogicTester.php';
 
 	$thismatch = trim($_POST['thismatch']);
 	$thismatch = preg_replace("/^[\'\"]/", "", $thismatch);
@@ -55,8 +56,12 @@
 			$useLatestRecordIdSetting = $module->getProjectSetting('use-latest-record-id');
 			if (!is_null($useLatestRecordIdSetting) && isset($useLatestRecordIdSetting[0]) && $useLatestRecordIdSetting[0] === true) {
 				$recordKeys = array_keys($filterData);
-				$records = \Records::getRecordList($_POST['otherpid'], [], false, false, null, null, 0, $recordKeys);
-				$recordId = end($records);
+				$records = Records::getRecordList($_POST['otherpid'], [], false, false, null, null, 0, $recordKeys);
+				if ($records) {
+					$recordId = end($records);
+				} else {
+					$recordId = key(array_slice($filterData, -1, 1, true));
+				}
 			} else {
 				// Either there were no matches or multiple matches.  Either way, we want to return without echo-ing any values.
 				return;
@@ -67,7 +72,7 @@
 		}
 	}
 
-	$data = \Records::getData($_POST['otherpid'], 'array', array($recordId));
+	$data = Records::getData($_POST['otherpid'], 'array', array($recordId));
 	if(empty($data)) {
 		return;
 	}
