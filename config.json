@@ -67,6 +67,13 @@
 					"repeatable": false
 				},
 				{
+					"key": "use-latest-record-id",
+					"name": "If multiple Records for Unique Match Field, use the latest Record Id?",
+					"required": false,
+					"type": "checkbox",
+					"repeatable": false
+				},
+				{
 					"key": "project-fields",
 					"name": "Pipe Field",
 					"required": false,

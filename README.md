@@ -28,6 +28,11 @@ example if Project A records are subject_id but Project B records are record_id.
 
 ![This picture shows the Alternate Source Match Field setting](/docs/readme_img_4.png)
 
+**5. Use Latest Record ID:**
+If your source project has multiple records with the same Record ID or Source Match Field, this module will not pipe the data because multiple source records exist.  In this scenario, you may use this option to import from the latest record (by record ID). When checked, and multiple source project's exist, the last source project created will be used. 
+
+![This picture shows the Latest Record ID Setting](/docs/readme_img_10.png)
+
 <span style='color: #ff0000;'>Note all configurations can repeat, in the instance you need to pipe values from multiple projects into one. Simply select the + icon in the gray space at the top.</span>
 
 <span style='font-weight: 600; text-decoration: underline;'>Setting up your piped field.<span>
