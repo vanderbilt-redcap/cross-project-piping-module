@@ -27,14 +27,20 @@
 		$thismatch,
 		$_POST['otherpid'],
 		$_POST['matchsource'],
-		$fieldName,
+		$fieldName
 	);
 
-	$thisjson = \REDCap::getData($_POST['thispid'], 'json', array($_POST['thisrecord']), array($_POST['thismatch']));
+	// The two 'include' parameters in geData make sure that we're checking repeating forms correctly
+	$thisjson = \REDCap::getData([
+		'project_id'=>$_POST['thispid'], 'return_format'=>'json',
+		'records'=>array($_POST['thisrecord']), 'fields'=>array($_POST['thismatch']),
+		'includeRepeatingFields'=>true,'returnIncludeRecordEventArray'=>true
+	]);
 	$thisdata = json_decode($thisjson, true);
 	$matchRecord = "";
 	foreach ($thisdata as $line) {
-		if ($line[$thismatch]) {
+		// If there is no repeating forms, the instance will be blank instead of 1, which is the default for REDCap's URLs and hooks
+		if ($line[$thismatch] && (($line['redcap_repeat_instance'] == "" ? "1" : $line['redcap_repeat_instance']) == $_POST['thisinstance'])) {
 			$matchRecord = $line[$thismatch];
 		}
 	}
