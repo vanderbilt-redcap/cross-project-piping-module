@@ -4,8 +4,6 @@
 	use ExternalModules\AbstractExternalModule;
 	use ExternalModules\ExternalModules;
 
-	require_once APP_PATH_DOCROOT.'Classes/LogicTester.php';
-
 	$thismatch = trim($_POST['thismatch']);
 	$thismatch = preg_replace("/^[\'\"]/", "", $thismatch);
 	$thismatch = preg_replace("/[\'\"]$/", "", $thismatch);
@@ -101,12 +99,11 @@
 	foreach ($data as $record => $recData) {
 		$Proj = new \Project($_POST['otherpid']);
 		foreach ($logicItems as $field => $logicItem) {
-			if (\LogicTester::isValid($logicItem)) {
-				$result = \LogicTester::apply($logicItem, $recData, $Proj, true);
-
+			$result = REDCap::evaluateLogic($logicItem, $_POST['otherpid'], $record, null, 1, "", "", $data, true);
+			if ($result !== null) {
 				$fieldName = substr($logicItem, 1, -1);
 
-				if ($result || $result === "0" || $result === 0) {
+				if ($result !== false) {
 					// escape choice key/values
 					$insecure_choices = json_decode($_POST['choices'], true);
 
