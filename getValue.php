@@ -99,7 +99,7 @@
 	foreach ($data as $record => $recData) {
 		$Proj = new \Project($_POST['otherpid']);
 		foreach ($logicItems as $field => $logicItem) {
-			$result = REDCap::evaluateLogic($logicItem, $_POST['otherpid'], $record, null, 1, "", "", $data, true);
+			$result = \REDCap::evaluateLogic($logicItem, $_POST['otherpid'], $record, null, 1, "", "", $data, true);
 			if ($result !== null) {
 				$fieldName = substr($logicItem, 1, -1);
 
