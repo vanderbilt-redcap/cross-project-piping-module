@@ -99,11 +99,14 @@
 	foreach ($data as $record => $recData) {
 		$Proj = new \Project($_POST['otherpid']);
 		foreach ($logicItems as $field => $logicItem) {
-			$result = \REDCap::evaluateLogic($logicItem, $_POST['otherpid'], $record, null, 1, "", "", $data, true);
-			if ($result !== null) {
+			if (isset($Proj->metadata[$field]) && \LogicTester::isValid($logicItem)) {
 				$fieldName = substr($logicItem, 1, -1);
 
-				if ($result !== false) {
+				$field_form = $Proj->metadata[$field]['form_name'];
+				$result = \Piping::replaceVariablesInLabel($logicItem, $record, $Proj->firstEventId, $repeat_instance, $data, false, $_POST['otherpid'],
+							false, ($Proj->isRepeatingForm($Proj->firstEventId, $field_form) ? $field_form : ""), 1, false, false, $field_form);
+
+				if ($result != "") {
 					// escape choice key/values
 					$insecure_choices = json_decode($_POST['choices'], true);
 
