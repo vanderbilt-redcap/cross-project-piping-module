@@ -342,7 +342,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		// If this record is locked let's just stop here, no point in piping on a locked record.
 		$escInst = db_real_escape_string($instrument);
 		$sql = "SELECT * FROM redcap_locking_data WHERE project_id = {$project_id} AND record = '{$record}' AND event_id = {$event_id} AND form_name = '{$escInst}' AND instance = {$repeat_instance}";
-		$results = $this->query($sql);
+		$results = db_query($sql);
 		$lockData = db_fetch_assoc($results);
 		if(!empty($lockData)) {
 			return;
@@ -357,7 +357,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 		} else {
 			$sql .= " AND instance IS NULL";
 		}
-		$compResults = $this->query($sql);
+		$compResults = db_query($sql);
 		$compData = db_fetch_assoc($compResults);
 		if(!empty($compData) && $compData['value'] > $this->pipeOnStatus) {
 			return;
@@ -708,8 +708,25 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 								var ajaxCountLimit = 0;
 								// console.log('++cppAjaxConnections = '+cppAjaxConnections);
 								//console.log(url);
-								$.post(url, { thisrecord: '<?= htmlspecialchars($_GET['id'], ENT_QUOTES) ?>', thispid: <?= intval($_GET['pid']) ?>, thisinstance: <?= intval($repeat_instance) ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
-                                    //console.log(data);
+								//$.post(url, { thisrecord: '<?= htmlspecialchars($_GET['id'], ENT_QUOTES) ?>', thispid: <?= intval($_GET['pid']) ?>, thisinstance: <?= intval($repeat_instance) ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
+                                  $.ajax({
+                                    url: url,
+                                    type: 'POST',
+                                    data: {
+                                      thisrecord: '<?= htmlspecialchars($_GET['id'], ENT_QUOTES) ?>',
+                                      thispid: <?= intval($_GET['pid']) ?>,
+                                      thisinstance: <?= intval($repeat_instance) ?>,
+                                      thismatch: match[field]['params'],
+                                      matchsource: matchSourceParam,
+                                      getlabel: getLabel,
+                                      otherpid: nodes[0],
+                                      otherlogic: remaining,
+                                      choices: JSON.stringify(choices),
+                                      redcap_csrf_token: redcap_csrf_token
+                                    },
+                                    async: false,
+                                    success: function(data) {
+                                  //console.log(data);
 									if(data.length && typeof(data) == 'string' && data.indexOf(<?=json_encode(\RCView::tt("dataqueries_352"))?>) >= 0) {
 										if(ajaxCountLimit >= 1000) {
 											return;
@@ -813,7 +830,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 									} else if(cppProcessing == false) {
 										cppProcessing = true;
 									}
-								});
+								}});
 							}
 						}
 					});
