@@ -829,7 +829,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 									} else if(cppProcessing == false) {
 										cppProcessing = true;
 									}
-								});
+								}});
 							}
 						}
 					});
