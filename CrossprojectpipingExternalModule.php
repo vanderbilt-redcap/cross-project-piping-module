@@ -708,8 +708,24 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 								var ajaxCountLimit = 0;
 								// console.log('++cppAjaxConnections = '+cppAjaxConnections);
 								//console.log(url);
-								$.post(url, { thisrecord: '<?= htmlspecialchars($_GET['id'], ENT_QUOTES) ?>', thispid: <?= intval($_GET['pid']) ?>, thisinstance: <?= intval($repeat_instance) ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
-                                    //console.log(data);
+								//$.post(url, { thisrecord: '<?= htmlspecialchars($_GET['id'], ENT_QUOTES) ?>', thispid: <?= intval($_GET['pid']) ?>, thisinstance: <?= intval($repeat_instance) ?>, thismatch: match[field]['params'], matchsource: matchSourceParam, getlabel: getLabel, otherpid: nodes[0], otherlogic: remaining, choices: JSON.stringify(choices) }, function(data) {
+                                  $.ajax({
+                                    url: url,
+                                    type: 'POST',
+                                    data: {
+                                      thisrecord: '<?= htmlspecialchars($_GET['id'], ENT_QUOTES) ?>',
+                                      thispid: <?= intval($_GET['pid']) ?>,
+                                      thisinstance: <?= intval($repeat_instance) ?>,
+                                      thismatch: match[field]['params'],
+                                      matchsource: matchSourceParam,
+                                      getlabel: getLabel,
+                                      otherpid: nodes[0],
+                                      otherlogic: remaining,
+                                      choices: JSON.stringify(choices)
+                                    },
+                                    async: false,
+                                    success: function(data) {
+                                  //console.log(data);
 									if(data.length && typeof(data) == 'string' && data.indexOf(<?=json_encode(\RCView::tt("dataqueries_352"))?>) >= 0) {
 										if(ajaxCountLimit >= 1000) {
 											return;
