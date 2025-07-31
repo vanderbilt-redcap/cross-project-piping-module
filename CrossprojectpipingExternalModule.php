@@ -483,7 +483,6 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 				});
 
 				function initiateLoadingOverlay() {
-                    showProgress(1,0);
 					// Create a loading overlay to indicate piping in process
 					var jsCppAjaxLoader = document.createElement('div');
 					jsCppAjaxLoader.setAttribute("id", "cppAjaxLoader");
@@ -818,7 +817,6 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
                                           $('#form').removeClass('piping-loading');
                                           $('#form').addClass('piping-complete');
                                           $('#cppAjaxLoader').remove();
-                                            showProgress(0,0);
                                           branchingPipingFix(fields);
 									}
 								}});
@@ -831,7 +829,6 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 						$('#form').removeClass('piping-loading');
 						$('#form').addClass('piping-complete');
 						$('#cppAjaxLoader').remove();
-                        showProgress(0,0);
 						branchingPipingFix(fields);
 					}
 				}
