@@ -483,6 +483,7 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 				});
 
 				function initiateLoadingOverlay() {
+                    showProgress(1,0);
 					// Create a loading overlay to indicate piping in process
 					var jsCppAjaxLoader = document.createElement('div');
 					jsCppAjaxLoader.setAttribute("id", "cppAjaxLoader");
@@ -814,33 +815,23 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 									}
 									if(cppAjaxConnections == 0) {
 										// Looks like all the ajax requests might be finished. Run a couple checks and then remove loading overlay.
-										if(cppProcessing) {
-											cppProcessing = false;
-											setTimeout(function(){
-												if(cppAjaxConnections == 0 && cppProcessing == false) {
-													$('#form').removeClass('piping-loading');
-													$('#form').addClass('piping-complete');
-													$('#cppAjaxLoader').remove();
-													branchingPipingFix(fields);
-												} else {
-													cppProcessing == true;
-												}
-											}, 50);
-										}
-									} else if(cppProcessing == false) {
-										cppProcessing = true;
+                                          $('#form').removeClass('piping-loading');
+                                          $('#form').addClass('piping-complete');
+                                          $('#cppAjaxLoader').remove();
+                                            showProgress(0,0);
+                                          branchingPipingFix(fields);
 									}
 								}});
 							}
 						}
 					});
 
-					if(cppFoundField == false) {
+					if(!cppFoundField) {
 						// Looks like we never found a field. Remove loading overlay.
-						cppProcessing = false;
 						$('#form').removeClass('piping-loading');
 						$('#form').addClass('piping-complete');
 						$('#cppAjaxLoader').remove();
+                        showProgress(0,0);
 						branchingPipingFix(fields);
 					}
 				}
