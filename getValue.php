@@ -103,8 +103,8 @@
 				$fieldName = substr($logicItem, 1, -1);
 				$field_form = $Proj->metadata[$field]['form_name'];
 
-				// Since piping for multiple choice fields will return the label by default, add :value to force it to retrieve the value
-				if ($Proj->isMultipleChoice($field)) {
+				// Since piping for multiple choice fields (including SQL fields) will return the label by default, add :value to force it to retrieve the value
+				if ($Proj->isMultipleChoice($field) || $Proj->metadata[$field]['element_type'] == 'sql') {
 					$logicItem = str_replace("]", ":value]", $logicItem);
 				}
 				// Get the value
