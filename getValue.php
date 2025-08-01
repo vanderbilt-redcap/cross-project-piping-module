@@ -101,10 +101,17 @@
 		foreach ($logicItems as $field => $logicItem) {
 			if (isset($Proj->metadata[$field]) && \LogicTester::isValid($logicItem)) {
 				$fieldName = substr($logicItem, 1, -1);
-
 				$field_form = $Proj->metadata[$field]['form_name'];
+
+				// Since piping for multiple choice fields will return the label by default, add :value to force it to retrieve the value
+				if ($Proj->isMultipleChoice($field)) {
+					$logicItem = str_replace("]", ":value]", $logicItem);
+				}
+				// Get the value
 				$result = \Piping::replaceVariablesInLabel($logicItem, $record, $Proj->firstEventId, $repeat_instance, $data, false, $_POST['otherpid'],
 							false, ($Proj->isRepeatingForm($Proj->firstEventId, $field_form) ? $field_form : ""), 1, false, false, $field_form);
+				// Convert br tags to true line breaks for text fields
+				$result = br2nl($result);
 
 				if ($result != "") {
 					// escape choice key/values

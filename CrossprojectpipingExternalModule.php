@@ -519,8 +519,6 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 					var fields = <?php print json_encode($startup_vars) ?>;
 					var choices = <?= json_encode($choicesForFields) ?>;
-					$('#form').addClass('piping-loading');
-					$('#center').css('position', 'realative');
 					
 					<?php if($useConfigSettings): ?>
 						// Lets add a little more context to the loading overlay (like text and a loading gif)
@@ -746,43 +744,22 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 
 									var tr = $('tr[sq_id='+field+']');
 									var id = lastNode.match(/\([^\s]+\)/);
-									 //console.log("Setting "+field+" to "+data);
-									if (typeof(data) == 'object') {    // checkbox
-										$.each(data, function( index, value ) {
-											var input = $('input:checkbox[code="'+index+'"]', tr);
-											if ($(input).length > 0) {
-												if (value == 1) {
-													$(input).prop('checked', true);
-													$('input:hidden[name="__chk__'+field+'_RC_'+index+'"]').val(index);
-												} else {
-													$(input).prop('checked', false);
-													$('input:hidden[name="__chk__'+field+'_RC_'+index+'"]').val('');
-												}
-												addBranchingField(field, input);
-												// $(input).change();
-											}
-										});
-									} else if (id) {    // checkbox
-										id = id[0].replace(/^\(/, "");
-										id = id.replace(/\)$/, "");
-										var input = $('input:checkbox[code="'+id+'"]', tr);
-										if ($(input).length > 0) {
-											if (data == 1) {
-												// console.log("A Setting "+field+" to "+data);
-												$(input).prop('checked', true);
-											} else {    // data == 0
-												// console.log("B Setting "+field+" to "+data);
-												$(input).prop('checked', false);
-											}
-											addBranchingField(field, input);
-											// $(input).change();
-										} else {
-											// console.log("C Setting "+field+" to "+data);
-											$('[name="'+field+'"]').val(data);
-											addBranchingField(field, $('[name="'+field+'"]'));
-											// $('[name="'+field+'"]').change();
-										}
+                                      // console.log("Setting "+field+" to "+data);
 
+                                    var isCheckbox = $('input:checkbox[name="__chkn__'+field+'"]', tr).length;
+                                    if (isCheckbox) {
+                                      data = data.replace(/\s+/g,'');
+                                      var choices = data.split(",");
+                                      $('input:checkbox[name="__chkn__'+field+'"]', tr).each(function(){
+                                        var code = $(this).attr('code');
+                                        if (in_array(code, choices)) {
+                                          $(this).prop('checked', true);
+                                          $('input:hidden[name="__chk__'+field+'_RC_'+code+'"]').val(code);
+                                        } else {
+                                          $(this).prop('checked', false);
+                                          $('input:hidden[name="__chk__'+field+'_RC_'+code+'"]').val('');
+                                        }
+                                      });
 									} else {
 										// Is this a date field? If so we need to format this date correctly.
 										if($('[name="'+field+'"]').hasClass('hasDatepicker') || (typeof $('[name="'+field+'"]').attr('fv') !== 'undefined' && $('[name="'+field+'"]').attr('fv').includes('date_'))) {
