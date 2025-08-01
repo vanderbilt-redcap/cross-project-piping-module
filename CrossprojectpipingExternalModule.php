@@ -475,14 +475,17 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 						$('#form table#questiontable>tbody').prepend('<tr style="border-top: 1px solid #DDDDDD;"><td style="text-align: center; padding: 6px;" colspan="2"><button id="ccpPipeData">Initiate Data Piping</button></td></tr>');
 						$('#ccpPipeData').click(function(evt){
 							evt.preventDefault();
-							runCrossProjectPiping();
+                            showProgress(1,0,'PIPING DATA');
+							setTimeout("runCrossProjectPiping();",100);
 						});
 					<?php else: ?>
-						runCrossProjectPiping();
+                        showProgress(1,0,'PIPING DATA');
+                        setTimeout("runCrossProjectPiping();",100);
 					<?php endif; ?>
 				});
 
 				function initiateLoadingOverlay() {
+                      return;
 					// Create a loading overlay to indicate piping in process
 					var jsCppAjaxLoader = document.createElement('div');
 					jsCppAjaxLoader.setAttribute("id", "cppAjaxLoader");
@@ -513,19 +516,17 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 				}
 
 				function runCrossProjectPiping() {
-					<?php if($this->pipingMode == 1): ?>
-						initiateLoadingOverlay();
-					<?php endif; ?>
+                  initiateLoadingOverlay();
 
 					var fields = <?php print json_encode($startup_vars) ?>;
 					var choices = <?= json_encode($choicesForFields) ?>;
 					
 					<?php if($useConfigSettings): ?>
 						// Lets add a little more context to the loading overlay (like text and a loading gif)
-						$('#cppAjaxLoader').prepend('<div id="cppAjaxLoaderInner" style="left: 0; right: 0; text-align: center; display: inline-block; position: absolute; top: 200px;"><div style="display: inline-block; padding: 40px; background-color: #fff; border-radius: 3px; font-size: 16px; font-weight: bold; color: #424242; border: 1px solid #757575;">PIPING DATA<br><img src="<?php echo $ajaxLoaderGif; ?>"></div></div>');
+						//$('#cppAjaxLoader').prepend('<div id="cppAjaxLoaderInner" style="left: 0; right: 0; text-align: center; display: inline-block; position: absolute; top: 200px;"><div style="display: inline-block; padding: 40px; background-color: #fff; border-radius: 3px; font-size: 16px; font-weight: bold; color: #424242; border: 1px solid #757575;">PIPING DATA<br><img src="<?php echo $ajaxLoaderGif; ?>"></div></div>');
 						// A little quick math for a nice position
-						var cppAjaxLoaderInnerOffset = Math.ceil($(window).scrollTop() + (($(window).height()-$('#cppAjaxLoaderInner').outerHeight()) * 0.5));
-						$('#cppAjaxLoaderInner').css('top', cppAjaxLoaderInnerOffset+'px');
+						//var cppAjaxLoaderInnerOffset = Math.ceil($(window).scrollTop() + (($(window).height()-$('#cppAjaxLoaderInner').outerHeight()) * 0.5));
+						//$('#cppAjaxLoaderInner').css('top', cppAjaxLoaderInnerOffset+'px');
 					<?php endif; ?>
 
 					const formatDate = (data, dateFormatStr, ) => {
@@ -793,7 +794,8 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 										// Looks like all the ajax requests might be finished. Run a couple checks and then remove loading overlay.
                                           $('#form').removeClass('piping-loading');
                                           $('#form').addClass('piping-complete');
-                                          $('#cppAjaxLoader').remove();
+                                          // $('#cppAjaxLoader').remove();
+                                          showProgress(0,0);
                                           branchingPipingFix(fields);
 									}
 								}});
@@ -805,7 +807,8 @@ class CrossprojectpipingExternalModule extends AbstractExternalModule
 						// Looks like we never found a field. Remove loading overlay.
 						$('#form').removeClass('piping-loading');
 						$('#form').addClass('piping-complete');
-						$('#cppAjaxLoader').remove();
+						//$('#cppAjaxLoader').remove();
+                        showProgress(0,0);
 						branchingPipingFix(fields);
 					}
 				}
